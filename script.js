@@ -2,9 +2,9 @@ class MultiTimeframeBTCCalculator {
     constructor() {
         this.currentPrice = 0;
         this.timeframes = {
-            daily: { high: 0, low: 0, close: 0, levels: {} },
-            weekly: { high: 0, low: 0, close: 0, levels: {} },
-            monthly: { high: 0, low: 0, close: 0, levels: {} }
+            daily: { high: 0, low: 0, close: 0, levels: {}, bidVolume: {}, bidLevels: {} },
+            weekly: { high: 0, low: 0, close: 0, levels: {}, bidVolume: {}, bidLevels: {} },
+            monthly: { high: 0, low: 0, close: 0, levels: {}, bidVolume: {}, bidLevels: {} }
         };
         this.currentTimeframe = 'daily';
         this.dataHistory = [];
@@ -99,6 +99,21 @@ class MultiTimeframeBTCCalculator {
                 }
             });
             
+            // Calculate bid volume by price
+            const bidVolume = {};
+            timeframeTrades.forEach(trade => {
+                const price = parseFloat(trade.price);
+                const quantity = parseFloat(trade.qty);
+                // Binance: isBuyerMaker === false bermakna BID (pembeli)
+                if (trade.isBuyerMaker === false) {
+                    if (bidVolume[price]) {
+                        bidVolume[price] += quantity;
+                    } else {
+                        bidVolume[price] = quantity;
+                    }
+                }
+            });
+            
             // Find highest and lowest volume prices
             let maxVolume = 0;
             let minVolume = Infinity;
@@ -151,7 +166,8 @@ class MultiTimeframeBTCCalculator {
                 startDate: startDate,
                 endDate: endDate,
                 volumeData: priceVolume,
-                trades: timeframeTrades // Simpan trades untuk chart
+                trades: timeframeTrades, // Simpan trades untuk chart
+                bidVolume: bidVolume
             };
             
             this.updateDataInfo(timeframe);
@@ -169,6 +185,7 @@ class MultiTimeframeBTCCalculator {
     calculateAllLevels() {
         Object.keys(this.timeframes).forEach(timeframe => {
             this.calculateLevels(timeframe);
+            this.calculateBidLevels(timeframe);
         });
     }
     
@@ -196,6 +213,34 @@ class MultiTimeframeBTCCalculator {
             s2: pivot - range,
             s3: pivot - (range * 2),
             s4: pivot - (range * 3)
+        };
+    }
+    
+    calculateBidLevels(timeframe) {
+        // Kira S/R/Target/Support berdasarkan bidVolume
+        const bidVolume = this.timeframes[timeframe].bidVolume || {};
+        const prices = Object.keys(bidVolume).map(p => parseFloat(p));
+        if (prices.length === 0) return;
+        // Cari price dengan bid volume paling tinggi
+        let maxBid = 0, maxBidPrice = 0;
+        prices.forEach(price => {
+            if (bidVolume[price] > maxBid) {
+                maxBid = bidVolume[price];
+                maxBidPrice = price;
+            }
+        });
+        // Gunakan maxBidPrice sebagai "pivot" untuk bid volume
+        // Sediakan dummy levels (boleh refine nanti)
+        this.timeframes[timeframe].bidLevels = {
+            pivot: maxBidPrice,
+            r1: maxBidPrice * 1.01,
+            r2: maxBidPrice * 1.02,
+            r3: maxBidPrice * 1.03,
+            r4: maxBidPrice * 1.04,
+            s1: maxBidPrice * 0.99,
+            s2: maxBidPrice * 0.98,
+            s3: maxBidPrice * 0.97,
+            s4: maxBidPrice * 0.96
         };
     }
     
