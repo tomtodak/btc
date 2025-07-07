@@ -728,6 +728,7 @@ class MultiTimeframeBTCCalculator {
 // Tab switching functionality
 document.addEventListener('DOMContentLoaded', function() {
     const tabButtons = document.querySelectorAll('.tab-button');
+    const chartContainer = document.querySelector('.chart-container');
     
     tabButtons.forEach(button => {
         button.addEventListener('click', function() {
@@ -756,6 +757,13 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Update chart with new timeframe
             updateChartWithTimeframe(timeframe);
+            
+            // Sembunyikan chart untuk tab bid/summary
+            if (['bid', 'summary'].includes(timeframe)) {
+                if (chartContainer) chartContainer.style.display = 'none';
+            } else {
+                if (chartContainer) chartContainer.style.display = '';
+            }
         });
     });
 });
