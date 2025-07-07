@@ -572,7 +572,13 @@ body {
     text-align: center;
     font-weight: 500;
 }
+.summary-suggestion + .next-target {
+    margin-top: 0;
+}
 .next-target + .next-target {
     margin-top: 0;
     margin-bottom: 0;
+}
+.next-target.last-next-target {
+    margin-bottom: 14px;
 } 
