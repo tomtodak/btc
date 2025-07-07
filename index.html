@@ -29,6 +29,8 @@
                     <button class="tab-button active" data-timeframe="daily">Daily</button>
                     <button class="tab-button" data-timeframe="weekly">Weekly</button>
                     <button class="tab-button" data-timeframe="monthly">Monthly</button>
+                    <button class="tab-button" data-timeframe="bid">Bid Volume</button>
+                    <button class="tab-button" data-timeframe="summary">Summary</button>
                 </div>
                 
                 <!-- Daily Content -->
@@ -141,30 +143,40 @@
             </div>
         </div>
         
-        <!-- Data Management Buttons -->
-        <div class="data-controls">
-            <button class="control-btn" onclick="exportData()">📊 Export Data</button>
-            <button class="control-btn" onclick="loadDataFromFile()">📁 Import Data</button>
-            <button class="control-btn" onclick="getDataSummary()">📋 Data Summary</button>
+        <!-- Bid Volume Content -->
+        <div id="bid-content" class="timeframe-content" style="display:none">
+            <!-- Bid volume grid and suggestion will be rendered here by JS -->
         </div>
-        
-        <!-- Comparison Table -->
-        <div class="comparison-table">
-            <h3>📊 Comparison Table</h3>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Level</th>
-                        <th>Daily</th>
-                        <th>Weekly</th>
-                        <th>Monthly</th>
-                    </tr>
-                </thead>
-                <tbody id="comparisonTable">
-                    <tr><td colspan="4">Loading...</td></tr>
-                </tbody>
-            </table>
+
+        <!-- Summary Content -->
+        <div id="summary-content" class="timeframe-content" style="display:none">
+            <!-- Summary table and suggestion will be rendered here by JS -->
         </div>
+    </div>
+
+    <!-- Data Management Buttons -->
+    <div class="data-controls">
+        <button class="control-btn" onclick="exportData()">📊 Export Data</button>
+        <button class="control-btn" onclick="loadDataFromFile()">📁 Import Data</button>
+        <button class="control-btn" onclick="getDataSummary()">📋 Data Summary</button>
+    </div>
+    
+    <!-- Comparison Table -->
+    <div class="comparison-table">
+        <h3>📊 Comparison Table</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Level</th>
+                    <th>Daily</th>
+                    <th>Weekly</th>
+                    <th>Monthly</th>
+                </tr>
+            </thead>
+            <tbody id="comparisonTable">
+                <tr><td colspan="4">Loading...</td></tr>
+            </tbody>
+        </table>
     </div>
 
     <script src="script.js"></script>
