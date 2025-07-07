@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BTC Support & Resistance Calculator - Multi Timeframe</title>
+    <title>BTC Multi-Timeframe Analysis (Daily, Weekly, Monthly) by tOm</title>
     <link rel="stylesheet" href="styles.css">
     <script src="chart.js"></script>
 </head>
@@ -19,10 +19,126 @@
             <div id="status" class="status"></div>
         </div>
         
-        <!-- Chart Section -->
-        <div class="chart-section">
-            <h3>📈 BTC Price Chart with Support & Resistance</h3>
-            <canvas id="btcChart" width="800" height="300"></canvas>
+        <div class="chart-container">
+            <canvas id="btcChart" width="1200" height="600"></canvas>
+        </div>
+        
+        <div class="main-content">
+            <div class="levels-section">
+                <div class="timeframe-tabs">
+                    <button class="tab-button active" data-timeframe="daily">Daily</button>
+                    <button class="tab-button" data-timeframe="weekly">Weekly</button>
+                    <button class="tab-button" data-timeframe="monthly">Monthly</button>
+                </div>
+                
+                <!-- Daily Content -->
+                <div id="daily-content" class="timeframe-content active">
+                    <div class="levels-grid-new">
+                        <div class="level-row">
+                            <div class="level-card resistance"><div class="level-title">R4</div><div class="price-value" id="daily-r4">-</div></div>
+                            <div class="level-card resistance"><div class="level-title">R3</div><div class="price-value" id="daily-r3">-</div></div>
+                            <div class="level-card resistance"><div class="level-title">R2</div><div class="price-value" id="daily-r2">-</div></div>
+                            <div class="level-card resistance"><div class="level-title">R1</div><div class="price-value" id="daily-r1">-</div></div>
+                </div>
+                        <div class="level-row pivot-row">
+                            <div class="level-card pivot"><div class="level-title">P</div><div class="price-value" id="daily-pivot">-</div></div>
+                </div>
+                        <div class="level-row">
+                            <div class="level-card support"><div class="level-title">S1</div><div class="price-value" id="daily-s1">-</div></div>
+                            <div class="level-card support"><div class="level-title">S2</div><div class="price-value" id="daily-s2">-</div></div>
+                            <div class="level-card support"><div class="level-title">S3</div><div class="price-value" id="daily-s3">-</div></div>
+                            <div class="level-card support"><div class="level-title">S4</div><div class="price-value" id="daily-s4">-</div></div>
+                </div>
+                </div>
+                    <div class="data-info">
+                        <div class="info-item">
+                            <span class="info-label">High:</span>
+                            <span class="info-value" id="daily-high">-</span>
+                </div>
+                        <div class="info-item">
+                            <span class="info-label">Low:</span>
+                            <span class="info-value" id="daily-low">-</span>
+                </div>
+                        <div class="info-item">
+                            <span class="info-label">Close:</span>
+                            <span class="info-value" id="daily-close">-</span>
+            </div>
+                    </div>
+                    <div class="suggestion-box" id="daily-suggestion">-</div>
+        </div>
+        
+        <!-- Weekly Content -->
+        <div id="weekly-content" class="timeframe-content">
+                    <div class="levels-grid-new">
+                        <div class="level-row">
+                            <div class="level-card resistance"><div class="level-title">R4</div><div class="price-value" id="weekly-r4">-</div></div>
+                            <div class="level-card resistance"><div class="level-title">R3</div><div class="price-value" id="weekly-r3">-</div></div>
+                            <div class="level-card resistance"><div class="level-title">R2</div><div class="price-value" id="weekly-r2">-</div></div>
+                            <div class="level-card resistance"><div class="level-title">R1</div><div class="price-value" id="weekly-r1">-</div></div>
+                </div>
+                        <div class="level-row pivot-row">
+                            <div class="level-card pivot"><div class="level-title">P</div><div class="price-value" id="weekly-pivot">-</div></div>
+                </div>
+                        <div class="level-row">
+                            <div class="level-card support"><div class="level-title">S1</div><div class="price-value" id="weekly-s1">-</div></div>
+                            <div class="level-card support"><div class="level-title">S2</div><div class="price-value" id="weekly-s2">-</div></div>
+                            <div class="level-card support"><div class="level-title">S3</div><div class="price-value" id="weekly-s3">-</div></div>
+                            <div class="level-card support"><div class="level-title">S4</div><div class="price-value" id="weekly-s4">-</div></div>
+                </div>
+                </div>
+                    <div class="data-info">
+                        <div class="info-item">
+                            <span class="info-label">High:</span>
+                            <span class="info-value" id="weekly-high">-</span>
+                </div>
+                        <div class="info-item">
+                            <span class="info-label">Low:</span>
+                            <span class="info-value" id="weekly-low">-</span>
+                </div>
+                        <div class="info-item">
+                            <span class="info-label">Close:</span>
+                            <span class="info-value" id="weekly-close">-</span>
+            </div>
+                    </div>
+                    <div class="suggestion-box" id="weekly-suggestion">-</div>
+        </div>
+        
+        <!-- Monthly Content -->
+        <div id="monthly-content" class="timeframe-content">
+                    <div class="levels-grid-new">
+                        <div class="level-row">
+                            <div class="level-card resistance"><div class="level-title">R4</div><div class="price-value" id="monthly-r4">-</div></div>
+                            <div class="level-card resistance"><div class="level-title">R3</div><div class="price-value" id="monthly-r3">-</div></div>
+                            <div class="level-card resistance"><div class="level-title">R2</div><div class="price-value" id="monthly-r2">-</div></div>
+                            <div class="level-card resistance"><div class="level-title">R1</div><div class="price-value" id="monthly-r1">-</div></div>
+                </div>
+                        <div class="level-row pivot-row">
+                            <div class="level-card pivot"><div class="level-title">P</div><div class="price-value" id="monthly-pivot">-</div></div>
+                </div>
+                        <div class="level-row">
+                            <div class="level-card support"><div class="level-title">S1</div><div class="price-value" id="monthly-s1">-</div></div>
+                            <div class="level-card support"><div class="level-title">S2</div><div class="price-value" id="monthly-s2">-</div></div>
+                            <div class="level-card support"><div class="level-title">S3</div><div class="price-value" id="monthly-s3">-</div></div>
+                            <div class="level-card support"><div class="level-title">S4</div><div class="price-value" id="monthly-s4">-</div></div>
+                </div>
+                </div>
+                    <div class="data-info">
+                        <div class="info-item">
+                            <span class="info-label">High:</span>
+                            <span class="info-value" id="monthly-high">-</span>
+                </div>
+                        <div class="info-item">
+                            <span class="info-label">Low:</span>
+                            <span class="info-value" id="monthly-low">-</span>
+                </div>
+                        <div class="info-item">
+                            <span class="info-label">Close:</span>
+                            <span class="info-value" id="monthly-close">-</span>
+            </div>
+                    </div>
+                    <div class="suggestion-box" id="monthly-suggestion">-</div>
+                </div>
+            </div>
         </div>
         
         <!-- Data Management Buttons -->
@@ -30,168 +146,6 @@
             <button class="control-btn" onclick="exportData()">📊 Export Data</button>
             <button class="control-btn" onclick="loadDataFromFile()">📁 Import Data</button>
             <button class="control-btn" onclick="getDataSummary()">📋 Data Summary</button>
-        </div>
-        
-        <div class="timeframe-tabs">
-            <button class="tab active" onclick="switchTimeframe('daily')">📅 Daily</button>
-            <button class="tab" onclick="switchTimeframe('weekly')">📊 Weekly</button>
-            <button class="tab" onclick="switchTimeframe('monthly')">📈 Monthly</button>
-        </div>
-        
-        <!-- Daily Content -->
-        <div id="daily-content" class="timeframe-content active">
-            <div class="levels-grid">
-                <div class="level-card resistance">
-                    <div class="level-title">R4</div>
-                    <div class="price-value" id="daily-r4">-</div>
-                </div>
-                <div class="level-card resistance">
-                    <div class="level-title">R3</div>
-                    <div class="price-value" id="daily-r3">-</div>
-                </div>
-                <div class="level-card resistance">
-                    <div class="level-title">R2</div>
-                    <div class="price-value" id="daily-r2">-</div>
-                </div>
-                <div class="level-card resistance">
-                    <div class="level-title">R1</div>
-                    <div class="price-value" id="daily-r1">-</div>
-                </div>
-                <div class="level-card pivot">
-                    <div class="level-title">P</div>
-                    <div class="price-value" id="daily-pivot">-</div>
-                </div>
-                <div class="level-card support">
-                    <div class="level-title">S1</div>
-                    <div class="price-value" id="daily-s1">-</div>
-                </div>
-                <div class="level-card support">
-                    <div class="level-title">S2</div>
-                    <div class="price-value" id="daily-s2">-</div>
-                </div>
-                <div class="level-card support">
-                    <div class="level-title">S3</div>
-                    <div class="price-value" id="daily-s3">-</div>
-                </div>
-                <div class="level-card support">
-                    <div class="level-title">S4</div>
-                    <div class="price-value" id="daily-s4">-</div>
-                </div>
-            </div>
-            
-            <div class="data-source">
-                <h3>📊 Daily Data Source</h3>
-                <div id="dailyDataInfo">
-                    <div class="loading">
-                        <div class="spinner"></div>
-                        Loading daily data...
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Weekly Content -->
-        <div id="weekly-content" class="timeframe-content">
-            <div class="levels-grid">
-                <div class="level-card resistance">
-                    <div class="level-title">R4</div>
-                    <div class="price-value" id="weekly-r4">-</div>
-                </div>
-                <div class="level-card resistance">
-                    <div class="level-title">R3</div>
-                    <div class="price-value" id="weekly-r3">-</div>
-                </div>
-                <div class="level-card resistance">
-                    <div class="level-title">R2</div>
-                    <div class="price-value" id="weekly-r2">-</div>
-                </div>
-                <div class="level-card resistance">
-                    <div class="level-title">R1</div>
-                    <div class="price-value" id="weekly-r1">-</div>
-                </div>
-                <div class="level-card pivot">
-                    <div class="level-title">P</div>
-                    <div class="price-value" id="weekly-pivot">-</div>
-                </div>
-                <div class="level-card support">
-                    <div class="level-title">S1</div>
-                    <div class="price-value" id="weekly-s1">-</div>
-                </div>
-                <div class="level-card support">
-                    <div class="level-title">S2</div>
-                    <div class="price-value" id="weekly-s2">-</div>
-                </div>
-                <div class="level-card support">
-                    <div class="level-title">S3</div>
-                    <div class="price-value" id="weekly-s3">-</div>
-                </div>
-                <div class="level-card support">
-                    <div class="level-title">S4</div>
-                    <div class="price-value" id="weekly-s4">-</div>
-                </div>
-            </div>
-            
-            <div class="data-source">
-                <h3>📊 Weekly Data Source (7 Days Ago)</h3>
-                <div id="weeklyDataInfo">
-                    <div class="loading">
-                        <div class="spinner"></div>
-                        Loading weekly data...
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Monthly Content -->
-        <div id="monthly-content" class="timeframe-content">
-            <div class="levels-grid">
-                <div class="level-card resistance">
-                    <div class="level-title">R4</div>
-                    <div class="price-value" id="monthly-r4">-</div>
-                </div>
-                <div class="level-card resistance">
-                    <div class="level-title">R3</div>
-                    <div class="price-value" id="monthly-r3">-</div>
-                </div>
-                <div class="level-card resistance">
-                    <div class="level-title">R2</div>
-                    <div class="price-value" id="monthly-r2">-</div>
-                </div>
-                <div class="level-card resistance">
-                    <div class="level-title">R1</div>
-                    <div class="price-value" id="monthly-r1">-</div>
-                </div>
-                <div class="level-card pivot">
-                    <div class="level-title">P</div>
-                    <div class="price-value" id="monthly-pivot">-</div>
-                </div>
-                <div class="level-card support">
-                    <div class="level-title">S1</div>
-                    <div class="price-value" id="monthly-s1">-</div>
-                </div>
-                <div class="level-card support">
-                    <div class="level-title">S2</div>
-                    <div class="price-value" id="monthly-s2">-</div>
-                </div>
-                <div class="level-card support">
-                    <div class="level-title">S3</div>
-                    <div class="price-value" id="monthly-s3">-</div>
-                </div>
-                <div class="level-card support">
-                    <div class="level-title">S4</div>
-                    <div class="price-value" id="monthly-s4">-</div>
-                </div>
-            </div>
-            
-            <div class="data-source">
-                <h3>📊 Monthly Data Source (30 Days Ago)</h3>
-                <div id="monthlyDataInfo">
-                    <div class="loading">
-                        <div class="spinner"></div>
-                        Loading monthly data...
-                    </div>
-                </div>
-            </div>
         </div>
         
         <!-- Comparison Table -->

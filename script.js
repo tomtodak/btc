@@ -211,13 +211,62 @@ class MultiTimeframeBTCCalculator {
     
     updateTimeframeDisplay(timeframe) {
         const levels = this.timeframes[timeframe].levels;
-        
+        const data = this.timeframes[timeframe];
+
+        // Fade-in animation for S/R cards
+        const grid = document.querySelector(`#${timeframe}-content .levels-grid-new`);
+        if (grid) {
+            grid.classList.remove('fade-in');
+            void grid.offsetWidth; // trigger reflow
+            grid.classList.add('fade-in');
+        }
+
+        // Update S/R levels
         Object.keys(levels).forEach(level => {
             const element = document.getElementById(`${timeframe}-${level}`);
             if (element) {
                 element.textContent = `$${levels[level].toFixed(2)}`;
             }
         });
+
+        // Update High, Low, Close
+        const highEl = document.getElementById(`${timeframe}-high`);
+        const lowEl = document.getElementById(`${timeframe}-low`);
+        const closeEl = document.getElementById(`${timeframe}-close`);
+        if (highEl) highEl.textContent = data.high ? `$${data.high.toFixed(2)}` : '-';
+        if (lowEl) lowEl.textContent = data.low ? `$${data.low.toFixed(2)}` : '-';
+        if (closeEl) closeEl.textContent = data.close ? `$${data.close.toFixed(2)}` : '-';
+
+        // Update suggestion
+        this.updateSuggestion(timeframe);
+    }
+    
+    updateSuggestion(timeframe) {
+        const data = this.timeframes[timeframe];
+        const levels = data.levels;
+        const current = this.currentPrice;
+        let suggestion = 'HOLD';
+        let className = 'suggestion-hold';
+        if (levels && data.high && data.low && data.close) {
+            if (current <= levels.s1 * 1.01) {
+                suggestion = 'BUY';
+                className = 'suggestion-buy';
+            } else if (current >= levels.r1 * 0.99) {
+                suggestion = 'SELL';
+                className = 'suggestion-sell';
+            }
+        }
+        const suggestionBox = document.getElementById(`${timeframe}-suggestion`);
+        if (suggestionBox) {
+            // Pulse animation on change
+            if (suggestionBox.textContent !== suggestion) {
+                suggestionBox.classList.remove('pulse');
+                void suggestionBox.offsetWidth;
+                suggestionBox.classList.add('pulse');
+            }
+            suggestionBox.textContent = suggestion;
+            suggestionBox.className = `suggestion-box ${className}`;
+        }
     }
     
     updateDataInfo(timeframe) {
@@ -408,23 +457,53 @@ class MultiTimeframeBTCCalculator {
             this.updateAllDisplays();
             this.updateComparisonTable();
             this.saveDataToJSON(); // Simpan data setiap update
+            // Notify chart to update S/R lines
+            window.dispatchEvent(new Event('updateChartLevels'));
         }, 300000);
     }
 }
 
-// Global function for switching timeframes
-function switchTimeframe(timeframe) {
-    // Update tabs
-    document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
-    event.target.classList.add('active');
+// Tab switching functionality
+document.addEventListener('DOMContentLoaded', function() {
+    const tabButtons = document.querySelectorAll('.tab-button');
     
-    // Update content
-    document.querySelectorAll('.timeframe-content').forEach(content => content.classList.remove('active'));
-    document.getElementById(`${timeframe}-content`).classList.add('active');
-    
-    // Update chart for new timeframe
-    if (window.calculator) {
-        window.calculator.updateChart(timeframe);
+    tabButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const timeframe = this.getAttribute('data-timeframe');
+            
+            // Remove active class from all buttons and content
+            tabButtons.forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.timeframe-content').forEach(content => content.classList.remove('active'));
+            
+            // Add active class to clicked button and corresponding content
+            this.classList.add('active');
+            document.getElementById(timeframe + '-content').classList.add('active');
+            
+            // Update current timeframe in calculator
+            if (window.calculator) {
+                window.calculator.currentTimeframe = timeframe;
+            }
+            
+            // Update chart with new timeframe
+            updateChartWithTimeframe(timeframe);
+        });
+    });
+});
+
+function updateChartWithTimeframe(timeframe) {
+    // Update chart S/R lines based on selected timeframe
+    if (window.btcChart && window.calculator) {
+        // Update current timeframe
+        window.calculator.currentTimeframe = timeframe;
+        
+        // Get new levels for the selected timeframe
+        const newLevels = window.calculator.timeframes[timeframe]?.levels || {};
+        
+        // Update chart levels and redraw only S/R lines (faster)
+        window.btcChart.levels = newLevels;
+        window.btcChart.updateSRLinesOnly();
+        
+        console.log(`Updated chart with ${timeframe} levels:`, newLevels);
     }
 }
 

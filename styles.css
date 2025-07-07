@@ -1,9 +1,74 @@
-body {
-    font-family: 'Arial', sans-serif;
-    background: linear-gradient(135deg, #1e3c72, #2a5298);
-    color: white;
+@import url('https://fonts.googleapis.com/css2?family=Proxima+Nova:wght@300;400;500;600;700&display=swap');
+
+* {
     margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Proxima Nova', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+body {
+    background: #000;
+    color: #fff;
+    font-family: 'Proxima Nova', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    line-height: 1.6;
     padding: 20px;
+    min-height: 100vh;
+}
+
+.main-content {
+    display: flex;
+    gap: 30px;
+    margin-bottom: 30px;
+    align-items: flex-start;
+}
+
+.chart-section {
+    flex: 2;
+    min-width: 0;
+}
+
+.levels-section {
+    flex: 1;
+    min-width: 300px;
+    background: #111;
+    border-radius: 12px;
+    padding: 20px;
+    border: 1px solid #333;
+}
+
+.chart-container {
+    background: none;
+    border-radius: 0;
+    padding: 0;
+    border: none;
+    margin-bottom: 20px;
+    box-shadow: none;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.chart-container canvas {
+    display: block;
+    margin: 0 auto;
+}
+
+@media (max-width: 1200px) {
+    .main-content {
+        flex-direction: column;
+        gap: 20px;
+    }
+    
+    .levels-section {
+        min-width: auto;
+        width: 100%;
+    }
+    
+    .chart-container canvas {
+        width: 100% !important;
+        height: auto !important;
+    }
 }
 
 .container {
@@ -17,7 +82,7 @@ body {
 }
 
 .price-display {
-    background: rgba(255,255,255,0.1);
+    background: rgba(255,255,255,0.05);
     padding: 20px;
     border-radius: 10px;
     margin-bottom: 20px;
@@ -27,16 +92,7 @@ body {
 .current-price {
     font-size: 2.5em;
     font-weight: bold;
-    color: #00ff88;
-}
-
-.chart-section {
-    background: rgba(255,255,255,0.1);
-    padding: 20px;
-    border-radius: 10px;
-    margin: 20px 0;
-    backdrop-filter: blur(10px);
-    text-align: center;
+    color: #feca57;
 }
 
 .chart-section h3 {
@@ -46,10 +102,10 @@ body {
 
 #btcChart {
     width: 100%;
-    max-width: 800px;
-    height: 300px;
+    max-width: 1200px;
+    height: 600px;
     border-radius: 8px;
-    background: rgba(0,0,0,0.3);
+    background: rgba(0,0,0,0.8);
 }
 
 /* Data Management Controls */
@@ -86,30 +142,63 @@ body {
 
 .timeframe-tabs {
     display: flex;
+    gap: 8px;
+    margin-bottom: 20px;
     justify-content: center;
-    margin-bottom: 30px;
-    gap: 10px;
 }
 
-.tab {
-    padding: 12px 24px;
-    background: rgba(255,255,255,0.1);
-    border: none;
-    border-radius: 25px;
-    color: white;
+.tab-button {
+    background: #222;
+    color: #ccc;
+    border: 1px solid #444;
+    padding: 8px 16px;
+    border-radius: 6px;
     cursor: pointer;
-    transition: all 0.3s;
-    backdrop-filter: blur(10px);
+    font-family: 'Proxima Nova', sans-serif;
+    font-weight: 500;
+    transition: all 0.3s ease;
 }
 
-.tab.active {
-    background: #00ff88;
-    color: #1e3c72;
-    font-weight: bold;
+.tab-button:hover {
+    background: #333;
+    color: #fff;
 }
 
-.tab:hover {
-    background: rgba(0,255,136,0.3);
+.tab-button.active {
+    background: #ffe066;
+    color: #000;
+    border-color: #ffe066;
+    font-weight: 600;
+}
+
+.data-info {
+    margin-top: 20px;
+    padding: 15px;
+    background: #1a1a1a;
+    border-radius: 8px;
+    border: 1px solid #333;
+}
+
+.info-item {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 8px;
+    font-family: 'Proxima Nova', sans-serif;
+    font-size: 14px;
+}
+
+.info-item:last-child {
+    margin-bottom: 0;
+}
+
+.info-label {
+    color: #ccc;
+    font-weight: 500;
+}
+
+.info-value {
+    color: #ffe066;
+    font-weight: 600;
 }
 
 .timeframe-content {
@@ -128,7 +217,7 @@ body {
 }
 
 .level-card {
-    background: rgba(255,255,255,0.1);
+    background: rgba(255,255,255,0.05);
     padding: 15px;
     border-radius: 10px;
     backdrop-filter: blur(10px);
@@ -142,11 +231,11 @@ body {
 }
 
 .resistance {
-    color: #ff6b6b;
+    color: #4ecdc4;
 }
 
 .support {
-    color: #4ecdc4;
+    color: #ff6b6b;
 }
 
 .pivot {
@@ -159,7 +248,7 @@ body {
 }
 
 .data-source {
-    background: rgba(255,255,255,0.1);
+    background: rgba(255,255,255,0.03);
     padding: 15px;
     border-radius: 10px;
     margin-bottom: 20px;
@@ -170,16 +259,20 @@ body {
     padding: 10px;
     border-radius: 5px;
     margin: 10px 0;
+    background: rgba(0,0,0,0.5);
+    color: #feca57;
 }
 
 .status.success {
-    background: rgba(0,255,0,0.2);
-    border: 1px solid #00ff88;
+    background: rgba(76,205,196,0.1);
+    border: 1px solid #4ecdc4;
+    color: #4ecdc4;
 }
 
 .status.error {
-    background: rgba(255,0,0,0.2);
+    background: rgba(255,107,107,0.1);
     border: 1px solid #ff6b6b;
+    color: #ff6b6b;
 }
 
 .loading {
@@ -203,7 +296,7 @@ body {
 }
 
 .comparison-table {
-    background: rgba(255,255,255,0.1);
+    background: rgba(255,255,255,0.03);
     padding: 20px;
     border-radius: 10px;
     margin-top: 20px;
@@ -223,8 +316,13 @@ body {
 }
 
 .comparison-table th {
-    background: rgba(255,255,255,0.1);
+    background: rgba(255,255,255,0.05);
     font-weight: bold;
+    color: #feca57;
+}
+
+.comparison-table td {
+    color: #f3f3f3;
 }
 
 .period-info {
@@ -244,7 +342,7 @@ body {
         align-items: center;
     }
     
-    .tab {
+    .tab-button {
         width: 200px;
     }
     
@@ -279,4 +377,132 @@ body {
         width: 100%;
         max-width: 250px;
     }
+}
+
+.levels-grid-new {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 30px;
+}
+
+.level-row {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    gap: 16px;
+}
+
+.pivot-row {
+    justify-content: center;
+    margin: 0.5em 0 0.5em 0;
+}
+
+.level-card.pivot {
+    min-width: 120px;
+    max-width: 140px;
+    margin: 0 auto;
+    background: #222;
+    border: 2px solid #ffe066;
+    color: #ffe066;
+    font-weight: bold;
+    box-shadow: 0 0 8px #ffe06644;
+}
+
+@media (max-width: 900px) {
+    .level-row {
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+    .levels-grid-new {
+        gap: 6px;
+    }
+    .level-card.pivot {
+        min-width: 90px;
+        max-width: 100px;
+    }
+}
+
+.suggestion-box {
+    margin: 16px auto 0 auto;
+    text-align: center;
+    font-size: 1.25em;
+    font-weight: 700;
+    padding: 10px 0;
+    border-radius: 8px;
+    min-width: 120px;
+    max-width: 220px;
+    letter-spacing: 1px;
+}
+.suggestion-buy {
+    color: #00e676;
+    background: #003a1a;
+    border: 1px solid #00e676;
+}
+.suggestion-sell {
+    color: #ff5252;
+    background: #3a0000;
+    border: 1px solid #ff5252;
+}
+.suggestion-hold {
+    color: #ffe066;
+    background: #3a3700;
+    border: 1px solid #ffe066;
+}
+
+/* Fade-in animation */
+.fade-in {
+  animation: fadeIn 0.7s cubic-bezier(0.4,0,0.2,1);
+}
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Pulse effect for suggestion box */
+.suggestion-box.pulse {
+  animation: pulse 1s;
+}
+@keyframes pulse {
+  0% { box-shadow: 0 0 0 0 #ffe06655; }
+  70% { box-shadow: 0 0 12px 8px #ffe06622; }
+  100% { box-shadow: 0 0 0 0 #ffe06600; }
+}
+
+/* Card hover effect */
+.level-card {
+  transition: transform 0.18s cubic-bezier(0.4,0,0.2,1), box-shadow 0.18s;
+  box-shadow: 0 2px 12px 0 #000a;
+}
+.level-card:hover {
+  transform: scale(1.06) translateY(-2px);
+  box-shadow: 0 4px 24px 0 #ffe06633, 0 2px 12px 0 #000a;
+  z-index: 2;
+}
+
+/* Tab button hover/active effect */
+.tab-button {
+  position: relative;
+  overflow: hidden;
+}
+.tab-button.active::after {
+  content: '';
+  display: block;
+  position: absolute;
+  left: 10%;
+  right: 10%;
+  bottom: 0;
+  height: 3px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, #ffe066 0%, #ffb300 100%);
+  animation: tabUnderline 0.4s cubic-bezier(0.4,0,0.2,1);
+}
+@keyframes tabUnderline {
+  from { width: 0; opacity: 0; }
+  to { width: 80%; opacity: 1; }
+}
+
+.suggestion-box {
+  transition: box-shadow 0.3s, background 0.3s, color 0.3s;
 } 
