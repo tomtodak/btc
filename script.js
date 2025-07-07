@@ -721,15 +721,43 @@ class MultiTimeframeBTCCalculator {
                 }
             }
         } else {
-            // Fallback sentiasa keluar suggestion default
-            action = 'HOLD';
-            price = this.currentPrice;
-            reason = 'No strong signal. Data volume tidak cukup atau belum dimuatkan.';
-            volumeAnalysis = 'Volume data kosong atau tidak cukup untuk analisa.';
-            className = 'suggestion-hold';
+            // Fallback sentiasa keluar suggestion agresif ikut current price dan trend
+            // Kira average level dari semua level price & bid (jika ada)
+            const allLevels = [
+                ...Object.values(dailyPrice),
+                ...Object.values(dailyBid)
+            ].filter(v => typeof v === 'number' && !isNaN(v) && v > 0);
+            const avgLevel = allLevels.length ? allLevels.reduce((a,b) => a+b,0)/allLevels.length : this.currentPrice;
+            if (this.currentPrice > avgLevel) {
+                if (trend === 'UPTREND') {
+                    action = 'SELL';
+                    reason = 'Current price above average level, uptrend.';
+                    className = 'suggestion-sell';
+                } else {
+                    action = 'LOCK PROFIT';
+                    reason = 'Current price above average level, downtrend.';
+                    className = 'suggestion-sell';
+                }
+            } else if (this.currentPrice < avgLevel) {
+                if (trend === 'UPTREND') {
+                    action = 'BUY';
+                    reason = 'Current price below average level, uptrend.';
+                    className = 'suggestion-buy';
+                } else {
+                    action = 'HOLD';
+                    reason = 'Current price below average level, downtrend.';
+                    className = 'suggestion-hold';
+                }
+            } else {
+                action = 'HOLD';
+                reason = 'No strong signal. Data volume tidak cukup atau belum dimuatkan.';
+                className = 'suggestion-hold';
+            }
+            price = avgLevel;
+            volumeAnalysis = 'Fallback: Analisa berdasarkan average level.';
             // Log ke console untuk debug
-            console.warn('[SUMMARY SUGGESTION] Data volume kosong atau tidak cukup:', {
-                dailyVolume, dailyBidVolume, maxVolumePrice, maxBidVolumePrice
+            console.warn('[SUMMARY SUGGESTION - FALLBACK] Fallback logic digunakan:', {
+                dailyVolume, dailyBidVolume, avgLevel, trend, currentPrice: this.currentPrice
             });
         }
         
