@@ -562,4 +562,13 @@ body {
     font-size: 1em;
     color: #ffe066;
     text-align: center;
+}
+
+.next-target {
+    font-size: 0.98em;
+    color: #ffe066;
+    margin-bottom: 8px;
+    margin-top: 2px;
+    text-align: center;
+    font-weight: 500;
 } 
