@@ -476,36 +476,62 @@ class MultiTimeframeBTCCalculator {
         timeframes.forEach(tf => {
             const data = this.timeframes[tf];
             const levels = data.levels;
-            let suggestion = '-';
+            let srSuggestion = '-';
+            let vtSuggestion = '-';
+            let taSuggestion = '-';
             let info = '';
             if (levels && data.high && data.low && data.close) {
                 const current = this.currentPrice;
-                // Logik suggestion
-                // HOLD jika volume paling banyak di beli pada current price
-                // LOCK PROFIT jika volume paling banyak dijual pada price atas current price
-                // BUY jika volume paling banyak di beli pada price bawah current price
-                // SELL jika volume paling banyak dijual pada price atas current price
-                // Anggap high = most bought, low = most sold
+
+                // 1. SR suggestion (ikut logic tab timeframe)
+                if (current <= levels.s1 * 1.01) {
+                    srSuggestion = 'BUY';
+                } else if (current >= levels.r1 * 0.99) {
+                    srSuggestion = 'SELL';
+                } else {
+                    srSuggestion = 'HOLD';
+                }
+
+                // 2. VT suggestion (ikut logic volume/trend)
                 if (Math.abs(current - data.high) < Math.abs(current - data.low)) {
                     if (Math.abs(current - data.high) < 1) {
-                        suggestion = 'HOLD';
+                        vtSuggestion = 'HOLD';
                     } else if (data.high > current) {
-                        suggestion = 'LOCK PROFIT';
+                        vtSuggestion = 'LOCK PROFIT';
                     } else {
-                        suggestion = 'BUY';
+                        vtSuggestion = 'BUY';
                     }
                 } else {
                     if (data.low > current) {
-                        suggestion = 'SELL';
+                        vtSuggestion = 'SELL';
                     } else {
-                        suggestion = 'BUY';
+                        vtSuggestion = 'BUY';
                     }
                 }
-                info = `<div>Current Price: <b>$${current.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</b></div>` +
-                       `<div>Most Bought: <b>$${data.high.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</b></div>` +
-                       `<div>Most Sold: <b>$${data.low.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</b></div>`;
+
+                // 3. Gabungan TA (Technical Analysis)
+                if (srSuggestion === vtSuggestion) {
+                    taSuggestion = srSuggestion;
+                } else if (vtSuggestion === 'BUY' && srSuggestion === 'BUY') {
+                    taSuggestion = 'STRONG BUY';
+                } else if (vtSuggestion === 'SELL' && srSuggestion === 'SELL') {
+                    taSuggestion = 'STRONG SELL';
+                } else if (srSuggestion === 'HOLD' || vtSuggestion === 'HOLD') {
+                    taSuggestion = 'HOLD';
+                } else {
+                    taSuggestion = 'CAUTION';
+                }
+
+                info = `
+                    <div><b>SR</b>: ${srSuggestion}</div>
+                    <div><b>VT</b>: ${vtSuggestion}</div>
+                    <div><b>TA</b>: ${taSuggestion}</div>
+                    <div>Current Price: <b>$${current.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</b></div>
+                    <div>Most Bought: <b>$${data.high.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</b></div>
+                    <div>Most Sold: <b>$${data.low.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</b></div>
+                `;
             }
-            document.getElementById(`summary-${tf}-suggestion`).textContent = suggestion;
+            document.getElementById(`summary-${tf}-suggestion`).textContent = taSuggestion;
             document.getElementById(`summary-${tf}-info`).innerHTML = info;
         });
     }
@@ -514,24 +540,31 @@ class MultiTimeframeBTCCalculator {
 // Tab switching functionality
 document.addEventListener('DOMContentLoaded', function() {
     const tabButtons = document.querySelectorAll('.tab-button');
+    const chartCanvas = document.getElementById('btcChart');
+    const summaryCards = document.getElementById('summary-cards-wrapper');
     
     tabButtons.forEach(button => {
         button.addEventListener('click', function() {
             const timeframe = this.getAttribute('data-timeframe');
-            
             // Remove active class from all buttons and content
             tabButtons.forEach(btn => btn.classList.remove('active'));
             document.querySelectorAll('.timeframe-content').forEach(content => content.classList.remove('active'));
-            
             // Add active class to clicked button and corresponding content
             this.classList.add('active');
-            document.getElementById(timeframe + '-content').classList.add('active');
-            
+            const contentDiv = document.getElementById(timeframe + '-content');
+            if (contentDiv) contentDiv.classList.add('active');
+            // Show/hide chart or summary
+            if (timeframe === 'summary') {
+                if (chartCanvas) chartCanvas.style.display = 'none';
+                if (summaryCards) summaryCards.style.display = 'block';
+            } else {
+                if (chartCanvas) chartCanvas.style.display = 'block';
+                if (summaryCards) summaryCards.style.display = 'none';
+            }
             // Update current timeframe in calculator
             if (window.calculator) {
                 window.calculator.currentTimeframe = timeframe;
             }
-            
             // Update chart with new timeframe
             updateChartWithTimeframe(timeframe);
         });
