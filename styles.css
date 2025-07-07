@@ -526,119 +526,40 @@ body {
   transition: box-shadow 0.3s, background 0.3s, color 0.3s;
 }
 
-/* Summary Styles */
-.summary-container {
-    padding: 20px;
-    background: #1a1a1a;
-    border-radius: 10px;
-    margin: 20px 0;
+.summary-cards {
+    display: flex;
+    gap: 24px;
+    justify-content: center;
+    margin: 32px 0 24px 0;
+    flex-wrap: wrap;
 }
-
-.summary-container h3 {
-    color: #ffe066;
-    text-align: center;
-    margin-bottom: 20px;
-    font-size: 1.5em;
+.summary-card {
+    background: #23272f;
+    border: 2px solid #ffe066;
+    border-radius: 12px;
+    box-shadow: 0 2px 12px #ffe06622;
+    padding: 24px 32px;
+    min-width: 220px;
+    max-width: 300px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 12px;
 }
-
-.summary-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 20px;
-    margin-bottom: 30px;
-}
-
-.summary-section {
-    background: #222;
-    padding: 15px;
-    border-radius: 8px;
-    border: 1px solid #333;
-}
-
-.summary-section h4 {
-    color: #ffe066;
-    margin-bottom: 15px;
-    text-align: center;
-    font-size: 1.1em;
-}
-
-.summary-table {
-    overflow-x: auto;
-}
-
-.summary-table table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 0.9em;
-}
-
-.summary-table th,
-.summary-table td {
-    padding: 8px 6px;
-    text-align: center;
-    border-bottom: 1px solid #333;
-}
-
-.summary-table th {
-    background: #333;
-    color: #ffe066;
+.summary-title {
+    font-size: 1.2em;
     font-weight: bold;
+    margin-bottom: 10px;
+    color: #ffe066;
 }
-
-.summary-table td {
+.summary-suggestion {
+    font-size: 1.5em;
+    font-weight: bold;
+    margin-bottom: 10px;
     color: #fff;
 }
-
-.summary-table tr:hover {
-    background: #2a2a2a;
-}
-
-.summary-suggestion {
-    background: #222;
-    padding: 20px;
-    border-radius: 8px;
-    border: 1px solid #333;
+.summary-info {
+    font-size: 1em;
+    color: #ffe066;
     text-align: center;
-}
-
-.summary-suggestion h4 {
-    color: #ffe066;
-    margin-bottom: 15px;
-    font-size: 1.2em;
-}
-
-.suggestion-details {
-    margin-top: 15px;
-    text-align: left;
-    padding: 15px;
-    background: #1a1a1a;
-    border-radius: 5px;
-    border-left: 3px solid #ffe066;
-}
-
-.suggestion-details p {
-    margin: 8px 0;
-    color: #ccc;
-    font-size: 0.9em;
-}
-
-.suggestion-details strong {
-    color: #ffe066;
-}
-
-/* Responsive design untuk summary */
-@media (max-width: 768px) {
-    .summary-grid {
-        grid-template-columns: 1fr;
-        gap: 15px;
-    }
-    
-    .summary-table {
-        font-size: 0.8em;
-    }
-    
-    .summary-table th,
-    .summary-table td {
-        padding: 6px 4px;
-    }
 } 

@@ -29,7 +29,6 @@
                     <button class="tab-button active" data-timeframe="daily">Daily</button>
                     <button class="tab-button" data-timeframe="weekly">Weekly</button>
                     <button class="tab-button" data-timeframe="monthly">Monthly</button>
-                    <button class="tab-button" data-timeframe="bid">Bid Volume</button>
                     <button class="tab-button" data-timeframe="summary">Summary</button>
                 </div>
                 
@@ -143,14 +142,25 @@
             </div>
         </div>
         
-        <!-- Bid Volume Content -->
-        <div id="bid-content" class="timeframe-content" style="display:none">
-            <!-- Bid volume grid and suggestion will be rendered here by JS -->
-        </div>
-
         <!-- Summary Content -->
-        <div id="summary-content" class="timeframe-content" style="display:none">
-            <!-- Summary table and suggestion will be rendered here by JS -->
+        <div id="summary-content" class="timeframe-content">
+            <div class="summary-cards">
+                <div class="summary-card" id="summary-daily-card">
+                    <div class="summary-title">Daily</div>
+                    <div class="summary-suggestion" id="summary-daily-suggestion">-</div>
+                    <div class="summary-info" id="summary-daily-info">-</div>
+                </div>
+                <div class="summary-card" id="summary-weekly-card">
+                    <div class="summary-title">Weekly</div>
+                    <div class="summary-suggestion" id="summary-weekly-suggestion">-</div>
+                    <div class="summary-info" id="summary-weekly-info">-</div>
+                </div>
+                <div class="summary-card" id="summary-monthly-card">
+                    <div class="summary-title">Monthly</div>
+                    <div class="summary-suggestion" id="summary-monthly-suggestion">-</div>
+                    <div class="summary-info" id="summary-monthly-info">-</div>
+                </div>
+            </div>
         </div>
     </div>
 

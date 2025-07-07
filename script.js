@@ -2,13 +2,12 @@ class MultiTimeframeBTCCalculator {
     constructor() {
         this.currentPrice = 0;
         this.timeframes = {
-            daily: { high: 0, low: 0, close: 0, levels: {}, bidVolume: {}, bidLevels: {} },
-            weekly: { high: 0, low: 0, close: 0, levels: {}, bidVolume: {}, bidLevels: {} },
-            monthly: { high: 0, low: 0, close: 0, levels: {}, bidVolume: {}, bidLevels: {} }
+            daily: { high: 0, low: 0, close: 0, levels: {} },
+            weekly: { high: 0, low: 0, close: 0, levels: {} },
+            monthly: { high: 0, low: 0, close: 0, levels: {} }
         };
         this.currentTimeframe = 'daily';
         this.dataHistory = [];
-        this.lastSelectedTimeframe = null;
         this.init();
     }
     
@@ -100,21 +99,6 @@ class MultiTimeframeBTCCalculator {
                 }
             });
             
-            // Calculate bid volume by price
-            const bidVolume = {};
-            timeframeTrades.forEach(trade => {
-                const price = parseFloat(trade.price);
-                const quantity = parseFloat(trade.qty);
-                // Binance: isBuyerMaker === false bermakna BID (pembeli)
-                if (trade.isBuyerMaker === false) {
-                    if (bidVolume[price]) {
-                        bidVolume[price] += quantity;
-                    } else {
-                        bidVolume[price] = quantity;
-                    }
-                }
-            });
-            
             // Find highest and lowest volume prices
             let maxVolume = 0;
             let minVolume = Infinity;
@@ -167,8 +151,7 @@ class MultiTimeframeBTCCalculator {
                 startDate: startDate,
                 endDate: endDate,
                 volumeData: priceVolume,
-                trades: timeframeTrades, // Simpan trades untuk chart
-                bidVolume: bidVolume
+                trades: timeframeTrades // Simpan trades untuk chart
             };
             
             this.updateDataInfo(timeframe);
@@ -186,7 +169,6 @@ class MultiTimeframeBTCCalculator {
     calculateAllLevels() {
         Object.keys(this.timeframes).forEach(timeframe => {
             this.calculateLevels(timeframe);
-            this.calculateBidLevels(timeframe);
         });
     }
     
@@ -217,34 +199,6 @@ class MultiTimeframeBTCCalculator {
         };
     }
     
-    calculateBidLevels(timeframe) {
-        // Kira S/R/Target/Support berdasarkan bidVolume
-        const bidVolume = this.timeframes[timeframe].bidVolume || {};
-        const prices = Object.keys(bidVolume).map(p => parseFloat(p));
-        if (prices.length === 0) return;
-        // Cari price dengan bid volume paling tinggi
-        let maxBid = 0, maxBidPrice = 0;
-        prices.forEach(price => {
-            if (bidVolume[price] > maxBid) {
-                maxBid = bidVolume[price];
-                maxBidPrice = price;
-            }
-        });
-        // Gunakan maxBidPrice sebagai "pivot" untuk bid volume
-        // Sediakan dummy levels (boleh refine nanti)
-        this.timeframes[timeframe].bidLevels = {
-            pivot: maxBidPrice,
-            r1: maxBidPrice * 1.01,
-            r2: maxBidPrice * 1.02,
-            r3: maxBidPrice * 1.03,
-            r4: maxBidPrice * 1.04,
-            s1: maxBidPrice * 0.99,
-            s2: maxBidPrice * 0.98,
-            s3: maxBidPrice * 0.97,
-            s4: maxBidPrice * 0.96
-        };
-    }
-    
     updateAllDisplays() {
         // Update current price
         document.getElementById('currentPrice').textContent = `$${this.currentPrice.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}`;
@@ -253,13 +207,9 @@ class MultiTimeframeBTCCalculator {
         Object.keys(this.timeframes).forEach(timeframe => {
             this.updateTimeframeDisplay(timeframe);
         });
-        // Update bid/summary jika tab aktif
-        const activeTab = document.querySelector('.tab-button.active');
-        if (activeTab) {
-            const tf = activeTab.getAttribute('data-timeframe');
-            if (tf === 'bid') this.renderBidVolumeDisplay(this.lastSelectedTimeframe || 'daily');
-            if (tf === 'summary') this.renderSummaryDisplay();
-        }
+        
+        // Update summary tab
+        this.updateSummaryTab();
     }
     
     updateTimeframeDisplay(timeframe) {
@@ -520,262 +470,50 @@ class MultiTimeframeBTCCalculator {
             window.dispatchEvent(new Event('updateChartLevels'));
         }, 300000);
     }
-
-    renderBidVolumeDisplay(timeframe) {
-        const bidLevels = this.timeframes[timeframe].bidLevels || {};
-        const container = document.getElementById('bid-content');
-        if (!container) return;
-        // Papar grid TR/SL/Current Price
-        container.innerHTML = `
-            <div class="levels-grid-new">
-                <div class="level-row">
-                    <div class="level-card resistance"><div class="level-title">TR4</div><div class="price-value">${bidLevels.r4 ? '$' + bidLevels.r4.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) : '-'}</div></div>
-                    <div class="level-card resistance"><div class="level-title">TR3</div><div class="price-value">${bidLevels.r3 ? '$' + bidLevels.r3.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) : '-'}</div></div>
-                    <div class="level-card resistance"><div class="level-title">TR2</div><div class="price-value">${bidLevels.r2 ? '$' + bidLevels.r2.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) : '-'}</div></div>
-                    <div class="level-card resistance"><div class="level-title">TR1</div><div class="price-value">${bidLevels.r1 ? '$' + bidLevels.r1.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) : '-'}</div></div>
-                </div>
-                <div class="level-row pivot-row">
-                    <div class="level-card pivot"><div class="level-title">Current Price</div><div class="price-value">${this.currentPrice ? '$' + this.currentPrice.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) : '-'}</div></div>
-                </div>
-                <div class="level-row">
-                    <div class="level-card support"><div class="level-title">SL1</div><div class="price-value">${bidLevels.s1 ? '$' + bidLevels.s1.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) : '-'}</div></div>
-                    <div class="level-card support"><div class="level-title">SL2</div><div class="price-value">${bidLevels.s2 ? '$' + bidLevels.s2.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) : '-'}</div></div>
-                    <div class="level-card support"><div class="level-title">SL3</div><div class="price-value">${bidLevels.s3 ? '$' + bidLevels.s3.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) : '-'}</div></div>
-                    <div class="level-card support"><div class="level-title">SL4</div><div class="price-value">${bidLevels.s4 ? '$' + bidLevels.s4.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) : '-'}</div></div>
-                </div>
-            </div>
-            <div class="suggestion-box" id="bid-suggestion">-</div>
-        `;
-        // Update suggestion untuk bid volume
-        this.updateBidSuggestion(timeframe);
-    }
-
-    updateBidSuggestion(timeframe) {
-        // Dummy logic: HOLD jika current price hampir pivot, BUY jika bawah, SELL jika atas
-        const bidLevels = this.timeframes[timeframe].bidLevels || {};
-        let suggestion = 'HOLD';
-        let className = 'suggestion-hold';
-        if (bidLevels.pivot) {
-            if (this.currentPrice < bidLevels.pivot * 0.99) {
-                suggestion = 'BUY';
-                className = 'suggestion-buy';
-            } else if (this.currentPrice > bidLevels.pivot * 1.01) {
-                suggestion = 'SELL';
-                className = 'suggestion-sell';
-            }
-        }
-        const suggestionBox = document.getElementById('bid-suggestion');
-        if (suggestionBox) {
-            suggestionBox.textContent = suggestion;
-            suggestionBox.className = `suggestion-box ${className}`;
-        }
-    }
-
-    renderSummaryDisplay() {
-        const container = document.getElementById('summary-content');
-        if (!container) return;
-        
-        // Dapatkan data dari semua timeframe
-        const dailyPrice = this.timeframes.daily.levels || {};
-        const dailyBid = this.timeframes.daily.bidLevels || {};
-        const weeklyPrice = this.timeframes.weekly.levels || {};
-        const weeklyBid = this.timeframes.weekly.bidLevels || {};
-        const monthlyPrice = this.timeframes.monthly.levels || {};
-        const monthlyBid = this.timeframes.monthly.bidLevels || {};
-        
-        // Generate suggestion berdasarkan logic yang awak minta
-        const suggestion = this.generateSummarySuggestion();
-        
-        container.innerHTML = `
-            <div class="summary-container">
-                <h3>📊 Summary Analysis</h3>
-                
-                <div class="summary-grid">
-                    <div class="summary-section">
-                        <h4>🎯 Price Volume Analysis</h4>
-                        <div class="summary-table">
-                            <table>
-                                <thead>
-                                    <tr><th>Level</th><th>Daily</th><th>Weekly</th><th>Monthly</th></tr>
-                                </thead>
-                                <tbody>
-                                    <tr><td><strong>TR4</strong></td><td>$${dailyPrice.r4?.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) || '-'}</td><td>$${weeklyPrice.r4?.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) || '-'}</td><td>$${monthlyPrice.r4?.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) || '-'}</td></tr>
-                                    <tr><td><strong>TR3</strong></td><td>$${dailyPrice.r3?.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) || '-'}</td><td>$${weeklyPrice.r3?.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) || '-'}</td><td>$${monthlyPrice.r3?.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) || '-'}</td></tr>
-                                    <tr><td><strong>TR2</strong></td><td>$${dailyPrice.r2?.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) || '-'}</td><td>$${weeklyPrice.r2?.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) || '-'}</td><td>$${monthlyPrice.r2?.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) || '-'}</td></tr>
-                                    <tr><td><strong>TR1</strong></td><td>$${dailyPrice.r1?.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) || '-'}</td><td>$${weeklyPrice.r1?.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) || '-'}</td><td>$${monthlyPrice.r1?.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) || '-'}</td></tr>
-                                    <tr><td><strong>Current</strong></td><td colspan="3" style="text-align:center;font-weight:bold;color:#ffe066;">$${this.currentPrice?.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) || '-'}</td></tr>
-                                    <tr><td><strong>SL1</strong></td><td>$${dailyPrice.s1?.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) || '-'}</td><td>$${weeklyPrice.s1?.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) || '-'}</td><td>$${monthlyPrice.s1?.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) || '-'}</td></tr>
-                                    <tr><td><strong>SL2</strong></td><td>$${dailyPrice.s2?.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) || '-'}</td><td>$${weeklyPrice.s2?.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) || '-'}</td><td>$${monthlyPrice.s2?.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) || '-'}</td></tr>
-                                    <tr><td><strong>SL3</strong></td><td>$${dailyPrice.s3?.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) || '-'}</td><td>$${weeklyPrice.s3?.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) || '-'}</td><td>$${monthlyPrice.s3?.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) || '-'}</td></tr>
-                                    <tr><td><strong>SL4</strong></td><td>$${dailyPrice.s4?.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) || '-'}</td><td>$${weeklyPrice.s4?.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) || '-'}</td><td>$${monthlyPrice.s4?.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) || '-'}</td></tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                    
-                    <div class="summary-section">
-                        <h4>💰 Bid Volume Analysis</h4>
-                        <div class="summary-table">
-                            <table>
-                                <thead>
-                                    <tr><th>Level</th><th>Daily</th><th>Weekly</th><th>Monthly</th></tr>
-                                </thead>
-                                <tbody>
-                                    <tr><td><strong>TR4</strong></td><td>$${dailyBid.r4?.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) || '-'}</td><td>$${weeklyBid.r4?.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) || '-'}</td><td>$${monthlyBid.r4?.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) || '-'}</td></tr>
-                                    <tr><td><strong>TR3</strong></td><td>$${dailyBid.r3?.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) || '-'}</td><td>$${weeklyBid.r3?.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) || '-'}</td><td>$${monthlyBid.r3?.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) || '-'}</td></tr>
-                                    <tr><td><strong>TR2</strong></td><td>$${dailyBid.r2?.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) || '-'}</td><td>$${weeklyBid.r2?.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) || '-'}</td><td>$${monthlyBid.r2?.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) || '-'}</td></tr>
-                                    <tr><td><strong>TR1</strong></td><td>$${dailyBid.r1?.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) || '-'}</td><td>$${weeklyBid.r1?.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) || '-'}</td><td>$${monthlyBid.r1?.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) || '-'}</td></tr>
-                                    <tr><td><strong>Current</strong></td><td colspan="3" style="text-align:center;font-weight:bold;color:#ffe066;">$${this.currentPrice?.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) || '-'}</td></tr>
-                                    <tr><td><strong>SL1</strong></td><td>$${dailyBid.s1?.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) || '-'}</td><td>$${weeklyBid.s1?.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) || '-'}</td><td>$${monthlyBid.s1?.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) || '-'}</td></tr>
-                                    <tr><td><strong>SL2</strong></td><td>$${dailyBid.s2?.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) || '-'}</td><td>$${weeklyBid.s2?.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) || '-'}</td><td>$${monthlyBid.s2?.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) || '-'}</td></tr>
-                                    <tr><td><strong>SL3</strong></td><td>$${dailyBid.s3?.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) || '-'}</td><td>$${weeklyBid.s3?.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) || '-'}</td><td>$${monthlyBid.s3?.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) || '-'}</td></tr>
-                                    <tr><td><strong>SL4</strong></td><td>$${dailyBid.s4?.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) || '-'}</td><td>$${weeklyBid.s4?.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) || '-'}</td><td>$${monthlyBid.s4?.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) || '-'}</td></tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="summary-suggestion">
-                    <h4>🎯 Recommendation</h4>
-                    <div class="suggestion-box ${suggestion.className}" id="summary-suggestion">
-                        ${suggestion.action} at $${suggestion.price?.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) || 'N/A'}
-                    </div>
-                    <div class="suggestion-details">
-                        <p><strong>Reason:</strong> ${suggestion.reason}</p>
-                        <p><strong>Volume Analysis:</strong> ${suggestion.volumeAnalysis}</p>
-                        <p><strong>Trend:</strong> ${suggestion.trend}</p>
-                    </div>
-                </div>
-            </div>
-        `;
-    }
-
-    generateSummarySuggestion() {
-        // Logic berdasarkan volume distribution dan trend
-        const dailyPrice = this.timeframes.daily.levels || {};
-        const dailyBid = this.timeframes.daily.bidLevels || {};
-        const dailyVolume = this.timeframes.daily.volumeData || {};
-        const dailyBidVolume = this.timeframes.daily.bidVolume || {};
-        
-        // Cari price dengan volume tertinggi
-        let maxVolumePrice = 0, maxVolume = 0;
-        Object.keys(dailyVolume).forEach(price => {
-            if (dailyVolume[price] > maxVolume) {
-                maxVolume = dailyVolume[price];
-                maxVolumePrice = parseFloat(price);
-            }
-        });
-        
-        // Cari price dengan bid volume tertinggi
-        let maxBidVolumePrice = 0, maxBidVolume = 0;
-        Object.keys(dailyBidVolume).forEach(price => {
-            if (dailyBidVolume[price] > maxBidVolume) {
-                maxBidVolume = dailyBidVolume[price];
-                maxBidVolumePrice = parseFloat(price);
-            }
-        });
-        
-        // Determine trend (simple logic)
-        const recentPrices = Object.keys(dailyVolume).map(p => parseFloat(p)).sort((a,b) => b-a);
-        const trend = recentPrices.length > 1 ? (recentPrices[0] > recentPrices[recentPrices.length-1] ? 'UPTREND' : 'DOWNTREND') : 'SIDEWAYS';
-        
-        // Generate suggestion berdasarkan logic yang awak minta
-        let action = 'HOLD';
-        let price = this.currentPrice;
-        let reason = 'No clear signal';
-        let volumeAnalysis = 'Insufficient volume data';
-        let className = 'suggestion-hold';
-        
-        if (maxVolumePrice && maxBidVolumePrice) {
-            const avgVolumePrice = (maxVolumePrice + maxBidVolumePrice) / 2;
-            
-            if (this.currentPrice >= avgVolumePrice * 0.99 && this.currentPrice <= avgVolumePrice * 1.01) {
-                if (trend === 'UPTREND' && maxBidVolume > maxVolume * 0.8) {
-                    action = 'HOLD';
-                    reason = 'Average volume highest at current price, uptrend with high bid buy';
-                    volumeAnalysis = `Volume peak at $${avgVolumePrice.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}`;
-                    className = 'suggestion-hold';
-                } else if (trend === 'DOWNTREND' && maxVolume > maxBidVolume * 0.8) {
-                    action = 'LOCK PROFIT';
-                    price = avgVolumePrice;
-                    reason = 'Average volume highest above current price, downtrend with high sell volume';
-                    volumeAnalysis = `Sell volume peak at $${avgVolumePrice.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}`;
-                    className = 'suggestion-sell';
-                }
-            } else if (this.currentPrice < avgVolumePrice * 0.99) {
-                if (trend === 'UPTREND' && maxBidVolume > maxVolume * 0.8) {
-                    action = 'BUY';
-                    price = avgVolumePrice;
-                    reason = 'Average volume highest below current price, uptrend with high bid buy';
-                    volumeAnalysis = `Buy volume peak at $${avgVolumePrice.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}`;
-                    className = 'suggestion-buy';
-                }
-            } else if (this.currentPrice > avgVolumePrice * 1.01) {
-                if (trend === 'DOWNTREND' && maxVolume > maxBidVolume * 0.8) {
-                    action = 'SELL';
-                    price = avgVolumePrice;
-                    reason = 'Volume highest above current price, downtrend with high sell volume';
-                    volumeAnalysis = `Sell volume peak at $${avgVolumePrice.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}`;
-                    className = 'suggestion-sell';
-                }
-            }
-        } else {
-            // Fallback sentiasa keluar suggestion agresif ikut current price dan trend
-            // Kira average level dari semua level price & bid (jika ada)
-            const allLevels = [
-                ...Object.values(dailyPrice),
-                ...Object.values(dailyBid)
-            ].filter(v => typeof v === 'number' && !isNaN(v) && v > 0);
-            const avgLevel = allLevels.length ? allLevels.reduce((a,b) => a+b,0)/allLevels.length : this.currentPrice;
-            if (this.currentPrice > avgLevel) {
-                if (trend === 'UPTREND') {
-                    action = 'SELL';
-                    reason = 'Current price above average level, uptrend.';
-                    className = 'suggestion-sell';
+    
+    updateSummaryTab() {
+        const timeframes = ['daily', 'weekly', 'monthly'];
+        timeframes.forEach(tf => {
+            const data = this.timeframes[tf];
+            const levels = data.levels;
+            let suggestion = '-';
+            let info = '';
+            if (levels && data.high && data.low && data.close) {
+                const current = this.currentPrice;
+                // Logik suggestion
+                // HOLD jika volume paling banyak di beli pada current price
+                // LOCK PROFIT jika volume paling banyak dijual pada price atas current price
+                // BUY jika volume paling banyak di beli pada price bawah current price
+                // SELL jika volume paling banyak dijual pada price atas current price
+                // Anggap high = most bought, low = most sold
+                if (Math.abs(current - data.high) < Math.abs(current - data.low)) {
+                    if (Math.abs(current - data.high) < 1) {
+                        suggestion = 'HOLD';
+                    } else if (data.high > current) {
+                        suggestion = 'LOCK PROFIT';
+                    } else {
+                        suggestion = 'BUY';
+                    }
                 } else {
-                    action = 'LOCK PROFIT';
-                    reason = 'Current price above average level, downtrend.';
-                    className = 'suggestion-sell';
+                    if (data.low > current) {
+                        suggestion = 'SELL';
+                    } else {
+                        suggestion = 'BUY';
+                    }
                 }
-            } else if (this.currentPrice < avgLevel) {
-                if (trend === 'UPTREND') {
-                    action = 'BUY';
-                    reason = 'Current price below average level, uptrend.';
-                    className = 'suggestion-buy';
-                } else {
-                    action = 'HOLD';
-                    reason = 'Current price below average level, downtrend.';
-                    className = 'suggestion-hold';
-                }
-            } else {
-                action = 'HOLD';
-                reason = 'No strong signal. Data volume tidak cukup atau belum dimuatkan.';
-                className = 'suggestion-hold';
+                info = `<div>Current Price: <b>$${current.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</b></div>` +
+                       `<div>Most Bought: <b>$${data.high.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</b></div>` +
+                       `<div>Most Sold: <b>$${data.low.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</b></div>`;
             }
-            price = avgLevel;
-            volumeAnalysis = 'Fallback: Analisa berdasarkan average level.';
-            // Log ke console untuk debug
-            console.warn('[SUMMARY SUGGESTION - FALLBACK] Fallback logic digunakan:', {
-                dailyVolume, dailyBidVolume, avgLevel, trend, currentPrice: this.currentPrice
-            });
-        }
-        
-        return {
-            action,
-            price,
-            reason,
-            volumeAnalysis,
-            trend,
-            className
-        };
+            document.getElementById(`summary-${tf}-suggestion`).textContent = suggestion;
+            document.getElementById(`summary-${tf}-info`).innerHTML = info;
+        });
     }
 }
 
 // Tab switching functionality
 document.addEventListener('DOMContentLoaded', function() {
     const tabButtons = document.querySelectorAll('.tab-button');
-    const chartContainer = document.querySelector('.chart-container');
     
     tabButtons.forEach(button => {
         button.addEventListener('click', function() {
@@ -792,29 +530,10 @@ document.addEventListener('DOMContentLoaded', function() {
             // Update current timeframe in calculator
             if (window.calculator) {
                 window.calculator.currentTimeframe = timeframe;
-                // Render bid volume display jika tab bid
-                if (timeframe === 'bid') {
-                    window.calculator.renderBidVolumeDisplay(window.calculator.lastSelectedTimeframe || 'daily');
-                }
-                // Render summary display jika tab summary
-                if (timeframe === 'summary') {
-                    window.calculator.renderSummaryDisplay();
-                }
-                // Simpan last selected timeframe untuk bid tab
-                if (['daily','weekly','monthly'].includes(timeframe)) {
-                    window.calculator.lastSelectedTimeframe = timeframe;
-                }
             }
             
             // Update chart with new timeframe
             updateChartWithTimeframe(timeframe);
-            
-            // Sembunyikan chart untuk tab bid/summary
-            if (['bid', 'summary'].includes(timeframe)) {
-                if (chartContainer) chartContainer.style.display = 'none';
-            } else {
-                if (chartContainer) chartContainer.style.display = '';
-            }
         });
     });
 });
@@ -825,19 +544,14 @@ function updateChartWithTimeframe(timeframe) {
         // Update current timeframe
         window.calculator.currentTimeframe = timeframe;
         
-        // Skip chart update untuk tab yang bukan timeframe valid (bid, summary)
-        if (['daily', 'weekly', 'monthly'].includes(timeframe)) {
-            // Get new levels for the selected timeframe
-            const newLevels = window.calculator.timeframes[timeframe]?.levels || {};
-            
-            // Update chart levels and redraw only S/R lines (faster)
-            window.btcChart.levels = newLevels;
-            window.btcChart.updateSRLinesOnly();
-            
-            console.log(`Updated chart with ${timeframe} levels:`, newLevels);
-        } else {
-            console.log(`Skipping chart update for ${timeframe} - not a valid timeframe`);
-        }
+        // Get new levels for the selected timeframe
+        const newLevels = window.calculator.timeframes[timeframe]?.levels || {};
+        
+        // Update chart levels and redraw only S/R lines (faster)
+        window.btcChart.levels = newLevels;
+        window.btcChart.updateSRLinesOnly();
+        
+        console.log(`Updated chart with ${timeframe} levels:`, newLevels);
     }
 }
 
