@@ -225,7 +225,8 @@ class BTCCandlestickChart {
         const priceRange = maxPrice - minPrice;
         minPrice -= priceRange * 0.05;
         maxPrice += priceRange * 0.05;
-        // Support levels (red #ff1744)
+        
+        // Support levels (red #ff1744) - Format: S1 $price, S2 $price, etc.
         ['s1','s2','s3','s4'].forEach((key, idx) => {
             const val = this.levels[key];
             if (val && val > 0) {
@@ -239,11 +240,13 @@ class BTCCandlestickChart {
                 this.ctx.stroke();
                 this.ctx.setLineDash([]);
                 this.ctx.fillStyle = '#ff1744';
-                this.ctx.font = '14px Proxima Nova, Arial, sans-serif';
-                this.ctx.fillText(key.toUpperCase(), this.canvas.width - this.padding - 55, y - 2);
+                this.ctx.font = '12px Proxima Nova, Arial, sans-serif';
+                const label = `S${idx + 1} $${val.toLocaleString(undefined, {maximumFractionDigits:0})}`;
+                this.ctx.fillText(label, this.canvas.width - this.padding - 100, y - 2);
             }
         });
-        // Resistance levels (green #00e676)
+        
+        // Resistance levels (green #00e676) - Format: TR1 $price, TR2 $price, etc.
         ['r1','r2','r3','r4'].forEach((key, idx) => {
             const val = this.levels[key];
             if (val && val > 0) {
@@ -257,8 +260,9 @@ class BTCCandlestickChart {
                 this.ctx.stroke();
                 this.ctx.setLineDash([]);
                 this.ctx.fillStyle = '#00e676';
-                this.ctx.font = '14px Proxima Nova, Arial, sans-serif';
-                this.ctx.fillText(key.toUpperCase(), this.canvas.width - this.padding - 55, y - 2);
+                this.ctx.font = '12px Proxima Nova, Arial, sans-serif';
+                const label = `TR${idx + 1} $${val.toLocaleString(undefined, {maximumFractionDigits:0})}`;
+                this.ctx.fillText(label, this.canvas.width - this.padding - 100, y - 2);
             }
         });
     }
