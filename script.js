@@ -766,14 +766,19 @@ function updateChartWithTimeframe(timeframe) {
         // Update current timeframe
         window.calculator.currentTimeframe = timeframe;
         
-        // Get new levels for the selected timeframe
-        const newLevels = window.calculator.timeframes[timeframe]?.levels || {};
-        
-        // Update chart levels and redraw only S/R lines (faster)
-        window.btcChart.levels = newLevels;
-        window.btcChart.updateSRLinesOnly();
-        
-        console.log(`Updated chart with ${timeframe} levels:`, newLevels);
+        // Skip chart update untuk tab yang bukan timeframe valid (bid, summary)
+        if (['daily', 'weekly', 'monthly'].includes(timeframe)) {
+            // Get new levels for the selected timeframe
+            const newLevels = window.calculator.timeframes[timeframe]?.levels || {};
+            
+            // Update chart levels and redraw only S/R lines (faster)
+            window.btcChart.levels = newLevels;
+            window.btcChart.updateSRLinesOnly();
+            
+            console.log(`Updated chart with ${timeframe} levels:`, newLevels);
+        } else {
+            console.log(`Skipping chart update for ${timeframe} - not a valid timeframe`);
+        }
     }
 }
 
