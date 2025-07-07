@@ -229,6 +229,12 @@ class MultiTimeframeBTCCalculator {
             }
         });
 
+        // Update pivot card with current price instead of pivot
+        const pivotElement = document.getElementById(`${timeframe}-pivot`);
+        if (pivotElement) {
+            pivotElement.textContent = `$${this.currentPrice.toFixed(2)}`;
+        }
+
         // Update High, Low, Close
         const highEl = document.getElementById(`${timeframe}-high`);
         const lowEl = document.getElementById(`${timeframe}-low`);
