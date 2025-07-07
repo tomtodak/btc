@@ -562,6 +562,167 @@ class MultiTimeframeBTCCalculator {
             suggestionBox.className = `suggestion-box ${className}`;
         }
     }
+
+    renderSummaryDisplay() {
+        const container = document.getElementById('summary-content');
+        if (!container) return;
+        
+        // Dapatkan data dari semua timeframe
+        const dailyPrice = this.timeframes.daily.levels || {};
+        const dailyBid = this.timeframes.daily.bidLevels || {};
+        const weeklyPrice = this.timeframes.weekly.levels || {};
+        const weeklyBid = this.timeframes.weekly.bidLevels || {};
+        const monthlyPrice = this.timeframes.monthly.levels || {};
+        const monthlyBid = this.timeframes.monthly.bidLevels || {};
+        
+        // Generate suggestion berdasarkan logic yang awak minta
+        const suggestion = this.generateSummarySuggestion();
+        
+        container.innerHTML = `
+            <div class="summary-container">
+                <h3>📊 Summary Analysis</h3>
+                
+                <div class="summary-grid">
+                    <div class="summary-section">
+                        <h4>🎯 Price Volume Analysis</h4>
+                        <div class="summary-table">
+                            <table>
+                                <thead>
+                                    <tr><th>Level</th><th>Daily</th><th>Weekly</th><th>Monthly</th></tr>
+                                </thead>
+                                <tbody>
+                                    <tr><td><strong>TR4</strong></td><td>$${dailyPrice.r4?.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) || '-'}</td><td>$${weeklyPrice.r4?.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) || '-'}</td><td>$${monthlyPrice.r4?.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) || '-'}</td></tr>
+                                    <tr><td><strong>TR3</strong></td><td>$${dailyPrice.r3?.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) || '-'}</td><td>$${weeklyPrice.r3?.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) || '-'}</td><td>$${monthlyPrice.r3?.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) || '-'}</td></tr>
+                                    <tr><td><strong>TR2</strong></td><td>$${dailyPrice.r2?.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) || '-'}</td><td>$${weeklyPrice.r2?.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) || '-'}</td><td>$${monthlyPrice.r2?.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) || '-'}</td></tr>
+                                    <tr><td><strong>TR1</strong></td><td>$${dailyPrice.r1?.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) || '-'}</td><td>$${weeklyPrice.r1?.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) || '-'}</td><td>$${monthlyPrice.r1?.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) || '-'}</td></tr>
+                                    <tr><td><strong>Current</strong></td><td colspan="3" style="text-align:center;font-weight:bold;color:#ffe066;">$${this.currentPrice?.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) || '-'}</td></tr>
+                                    <tr><td><strong>SL1</strong></td><td>$${dailyPrice.s1?.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) || '-'}</td><td>$${weeklyPrice.s1?.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) || '-'}</td><td>$${monthlyPrice.s1?.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) || '-'}</td></tr>
+                                    <tr><td><strong>SL2</strong></td><td>$${dailyPrice.s2?.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) || '-'}</td><td>$${weeklyPrice.s2?.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) || '-'}</td><td>$${monthlyPrice.s2?.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) || '-'}</td></tr>
+                                    <tr><td><strong>SL3</strong></td><td>$${dailyPrice.s3?.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) || '-'}</td><td>$${weeklyPrice.s3?.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) || '-'}</td><td>$${monthlyPrice.s3?.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) || '-'}</td></tr>
+                                    <tr><td><strong>SL4</strong></td><td>$${dailyPrice.s4?.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) || '-'}</td><td>$${weeklyPrice.s4?.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) || '-'}</td><td>$${monthlyPrice.s4?.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) || '-'}</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <div class="summary-section">
+                        <h4>💰 Bid Volume Analysis</h4>
+                        <div class="summary-table">
+                            <table>
+                                <thead>
+                                    <tr><th>Level</th><th>Daily</th><th>Weekly</th><th>Monthly</th></tr>
+                                </thead>
+                                <tbody>
+                                    <tr><td><strong>TR4</strong></td><td>$${dailyBid.r4?.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) || '-'}</td><td>$${weeklyBid.r4?.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) || '-'}</td><td>$${monthlyBid.r4?.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) || '-'}</td></tr>
+                                    <tr><td><strong>TR3</strong></td><td>$${dailyBid.r3?.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) || '-'}</td><td>$${weeklyBid.r3?.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) || '-'}</td><td>$${monthlyBid.r3?.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) || '-'}</td></tr>
+                                    <tr><td><strong>TR2</strong></td><td>$${dailyBid.r2?.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) || '-'}</td><td>$${weeklyBid.r2?.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) || '-'}</td><td>$${monthlyBid.r2?.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) || '-'}</td></tr>
+                                    <tr><td><strong>TR1</strong></td><td>$${dailyBid.r1?.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) || '-'}</td><td>$${weeklyBid.r1?.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) || '-'}</td><td>$${monthlyBid.r1?.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) || '-'}</td></tr>
+                                    <tr><td><strong>Current</strong></td><td colspan="3" style="text-align:center;font-weight:bold;color:#ffe066;">$${this.currentPrice?.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) || '-'}</td></tr>
+                                    <tr><td><strong>SL1</strong></td><td>$${dailyBid.s1?.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) || '-'}</td><td>$${weeklyBid.s1?.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) || '-'}</td><td>$${monthlyBid.s1?.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) || '-'}</td></tr>
+                                    <tr><td><strong>SL2</strong></td><td>$${dailyBid.s2?.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) || '-'}</td><td>$${weeklyBid.s2?.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) || '-'}</td><td>$${monthlyBid.s2?.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) || '-'}</td></tr>
+                                    <tr><td><strong>SL3</strong></td><td>$${dailyBid.s3?.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) || '-'}</td><td>$${weeklyBid.s3?.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) || '-'}</td><td>$${monthlyBid.s3?.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) || '-'}</td></tr>
+                                    <tr><td><strong>SL4</strong></td><td>$${dailyBid.s4?.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) || '-'}</td><td>$${weeklyBid.s4?.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) || '-'}</td><td>$${monthlyBid.s4?.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) || '-'}</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="summary-suggestion">
+                    <h4>🎯 Recommendation</h4>
+                    <div class="suggestion-box ${suggestion.className}" id="summary-suggestion">
+                        ${suggestion.action} at $${suggestion.price?.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) || 'N/A'}
+                    </div>
+                    <div class="suggestion-details">
+                        <p><strong>Reason:</strong> ${suggestion.reason}</p>
+                        <p><strong>Volume Analysis:</strong> ${suggestion.volumeAnalysis}</p>
+                        <p><strong>Trend:</strong> ${suggestion.trend}</p>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    generateSummarySuggestion() {
+        // Logic berdasarkan volume distribution dan trend
+        const dailyPrice = this.timeframes.daily.levels || {};
+        const dailyBid = this.timeframes.daily.bidLevels || {};
+        const dailyVolume = this.timeframes.daily.volumeData || {};
+        const dailyBidVolume = this.timeframes.daily.bidVolume || {};
+        
+        // Cari price dengan volume tertinggi
+        let maxVolumePrice = 0, maxVolume = 0;
+        Object.keys(dailyVolume).forEach(price => {
+            if (dailyVolume[price] > maxVolume) {
+                maxVolume = dailyVolume[price];
+                maxVolumePrice = parseFloat(price);
+            }
+        });
+        
+        // Cari price dengan bid volume tertinggi
+        let maxBidVolumePrice = 0, maxBidVolume = 0;
+        Object.keys(dailyBidVolume).forEach(price => {
+            if (dailyBidVolume[price] > maxBidVolume) {
+                maxBidVolume = dailyBidVolume[price];
+                maxBidVolumePrice = parseFloat(price);
+            }
+        });
+        
+        // Determine trend (simple logic)
+        const recentPrices = Object.keys(dailyVolume).map(p => parseFloat(p)).sort((a,b) => b-a);
+        const trend = recentPrices.length > 1 ? (recentPrices[0] > recentPrices[recentPrices.length-1] ? 'UPTREND' : 'DOWNTREND') : 'SIDEWAYS';
+        
+        // Generate suggestion berdasarkan logic yang awak minta
+        let action = 'HOLD';
+        let price = this.currentPrice;
+        let reason = 'No clear signal';
+        let volumeAnalysis = 'Insufficient volume data';
+        let className = 'suggestion-hold';
+        
+        if (maxVolumePrice && maxBidVolumePrice) {
+            const avgVolumePrice = (maxVolumePrice + maxBidVolumePrice) / 2;
+            
+            if (this.currentPrice >= avgVolumePrice * 0.99 && this.currentPrice <= avgVolumePrice * 1.01) {
+                if (trend === 'UPTREND' && maxBidVolume > maxVolume * 0.8) {
+                    action = 'HOLD';
+                    reason = 'Average volume highest at current price, uptrend with high bid buy';
+                    volumeAnalysis = `Volume peak at $${avgVolumePrice.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}`;
+                    className = 'suggestion-hold';
+                } else if (trend === 'DOWNTREND' && maxVolume > maxBidVolume * 0.8) {
+                    action = 'LOCK PROFIT';
+                    price = avgVolumePrice;
+                    reason = 'Average volume highest above current price, downtrend with high sell volume';
+                    volumeAnalysis = `Sell volume peak at $${avgVolumePrice.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}`;
+                    className = 'suggestion-sell';
+                }
+            } else if (this.currentPrice < avgVolumePrice * 0.99) {
+                if (trend === 'UPTREND' && maxBidVolume > maxVolume * 0.8) {
+                    action = 'BUY';
+                    price = avgVolumePrice;
+                    reason = 'Average volume highest below current price, uptrend with high bid buy';
+                    volumeAnalysis = `Buy volume peak at $${avgVolumePrice.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}`;
+                    className = 'suggestion-buy';
+                }
+            } else if (this.currentPrice > avgVolumePrice * 1.01) {
+                if (trend === 'DOWNTREND' && maxVolume > maxBidVolume * 0.8) {
+                    action = 'SELL';
+                    price = avgVolumePrice;
+                    reason = 'Volume highest above current price, downtrend with high sell volume';
+                    volumeAnalysis = `Sell volume peak at $${avgVolumePrice.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}`;
+                    className = 'suggestion-sell';
+                }
+            }
+        }
+        
+        return {
+            action,
+            price,
+            reason,
+            volumeAnalysis,
+            trend,
+            className
+        };
+    }
 }
 
 // Tab switching functionality
@@ -586,6 +747,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Render bid volume display jika tab bid
                 if (timeframe === 'bid') {
                     window.calculator.renderBidVolumeDisplay('daily'); // default: daily
+                }
+                // Render summary display jika tab summary
+                if (timeframe === 'summary') {
+                    window.calculator.renderSummaryDisplay();
                 }
             }
             
