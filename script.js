@@ -512,6 +512,56 @@ class MultiTimeframeBTCCalculator {
             window.dispatchEvent(new Event('updateChartLevels'));
         }, 300000);
     }
+
+    renderBidVolumeDisplay(timeframe) {
+        const bidLevels = this.timeframes[timeframe].bidLevels || {};
+        const container = document.getElementById('bid-content');
+        if (!container) return;
+        // Papar grid TR/SL/Current Price
+        container.innerHTML = `
+            <div class="levels-grid-new">
+                <div class="level-row">
+                    <div class="level-card resistance"><div class="level-title">TR4</div><div class="price-value">${bidLevels.r4 ? '$' + bidLevels.r4.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) : '-'}</div></div>
+                    <div class="level-card resistance"><div class="level-title">TR3</div><div class="price-value">${bidLevels.r3 ? '$' + bidLevels.r3.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) : '-'}</div></div>
+                    <div class="level-card resistance"><div class="level-title">TR2</div><div class="price-value">${bidLevels.r2 ? '$' + bidLevels.r2.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) : '-'}</div></div>
+                    <div class="level-card resistance"><div class="level-title">TR1</div><div class="price-value">${bidLevels.r1 ? '$' + bidLevels.r1.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) : '-'}</div></div>
+                </div>
+                <div class="level-row pivot-row">
+                    <div class="level-card pivot"><div class="level-title">Current Price</div><div class="price-value">${this.currentPrice ? '$' + this.currentPrice.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) : '-'}</div></div>
+                </div>
+                <div class="level-row">
+                    <div class="level-card support"><div class="level-title">SL1</div><div class="price-value">${bidLevels.s1 ? '$' + bidLevels.s1.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) : '-'}</div></div>
+                    <div class="level-card support"><div class="level-title">SL2</div><div class="price-value">${bidLevels.s2 ? '$' + bidLevels.s2.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) : '-'}</div></div>
+                    <div class="level-card support"><div class="level-title">SL3</div><div class="price-value">${bidLevels.s3 ? '$' + bidLevels.s3.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) : '-'}</div></div>
+                    <div class="level-card support"><div class="level-title">SL4</div><div class="price-value">${bidLevels.s4 ? '$' + bidLevels.s4.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) : '-'}</div></div>
+                </div>
+            </div>
+            <div class="suggestion-box" id="bid-suggestion">-</div>
+        `;
+        // Update suggestion untuk bid volume
+        this.updateBidSuggestion(timeframe);
+    }
+
+    updateBidSuggestion(timeframe) {
+        // Dummy logic: HOLD jika current price hampir pivot, BUY jika bawah, SELL jika atas
+        const bidLevels = this.timeframes[timeframe].bidLevels || {};
+        let suggestion = 'HOLD';
+        let className = 'suggestion-hold';
+        if (bidLevels.pivot) {
+            if (this.currentPrice < bidLevels.pivot * 0.99) {
+                suggestion = 'BUY';
+                className = 'suggestion-buy';
+            } else if (this.currentPrice > bidLevels.pivot * 1.01) {
+                suggestion = 'SELL';
+                className = 'suggestion-sell';
+            }
+        }
+        const suggestionBox = document.getElementById('bid-suggestion');
+        if (suggestionBox) {
+            suggestionBox.textContent = suggestion;
+            suggestionBox.className = `suggestion-box ${className}`;
+        }
+    }
 }
 
 // Tab switching functionality
@@ -533,6 +583,10 @@ document.addEventListener('DOMContentLoaded', function() {
             // Update current timeframe in calculator
             if (window.calculator) {
                 window.calculator.currentTimeframe = timeframe;
+                // Render bid volume display jika tab bid
+                if (timeframe === 'bid') {
+                    window.calculator.renderBidVolumeDisplay('daily'); // default: daily
+                }
             }
             
             // Update chart with new timeframe
