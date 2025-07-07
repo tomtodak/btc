@@ -8,6 +8,7 @@ class MultiTimeframeBTCCalculator {
         };
         this.currentTimeframe = 'daily';
         this.dataHistory = [];
+        this.lastSelectedTimeframe = null;
         this.init();
     }
     
@@ -252,6 +253,13 @@ class MultiTimeframeBTCCalculator {
         Object.keys(this.timeframes).forEach(timeframe => {
             this.updateTimeframeDisplay(timeframe);
         });
+        // Update bid/summary jika tab aktif
+        const activeTab = document.querySelector('.tab-button.active');
+        if (activeTab) {
+            const tf = activeTab.getAttribute('data-timeframe');
+            if (tf === 'bid') this.renderBidVolumeDisplay(this.lastSelectedTimeframe || 'daily');
+            if (tf === 'summary') this.renderSummaryDisplay();
+        }
     }
     
     updateTimeframeDisplay(timeframe) {
@@ -747,11 +755,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 window.calculator.currentTimeframe = timeframe;
                 // Render bid volume display jika tab bid
                 if (timeframe === 'bid') {
-                    window.calculator.renderBidVolumeDisplay('daily'); // default: daily
+                    window.calculator.renderBidVolumeDisplay(window.calculator.lastSelectedTimeframe || 'daily');
                 }
                 // Render summary display jika tab summary
                 if (timeframe === 'summary') {
                     window.calculator.renderSummaryDisplay();
+                }
+                // Simpan last selected timeframe untuk bid tab
+                if (['daily','weekly','monthly'].includes(timeframe)) {
+                    window.calculator.lastSelectedTimeframe = timeframe;
                 }
             }
             
