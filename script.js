@@ -19,6 +19,9 @@ class MultiTimeframeBTCCalculator {
         this.updateComparisonTable();
         this.startRealTimeUpdates();
         this.saveDataToJSON();
+        
+        // Update chart with initial data
+        this.updateChart('daily');
     }
     
     async getCurrentPrice() {
@@ -73,8 +76,8 @@ class MultiTimeframeBTCCalculator {
             const klinesResponse = await fetch(`https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=1h&startTime=${startDate.getTime()}&endTime=${endDate.getTime()}&limit=1000`);
             const klinesData = await klinesResponse.json();
             
-            // Get trades dalam tempoh tersebut
-            const tradesResponse = await fetch('https://api.binance.com/api/v3/trades?symbol=BTCUSDT&limit=1000');
+            // Get trades dalam tempoh tersebut - increase limit untuk dapat lebih banyak data
+            const tradesResponse = await fetch('https://api.binance.com/api/v3/trades?symbol=BTCUSDT&limit=2000');
             const tradesData = await tradesResponse.json();
             
             // Filter trades untuk tempoh yang betul
@@ -114,6 +117,32 @@ class MultiTimeframeBTCCalculator {
                 }
             });
             
+            // Fallback: Jika volume data tidak cukup, gunakan klines data
+            if (maxVolumePrice === 0 || minVolumePrice === 0) {
+                console.log(`Using klines data for ${timeframe} - volume data insufficient`);
+                
+                let highPrice = 0;
+                let lowPrice = Infinity;
+                
+                klinesData.forEach(kline => {
+                    const high = parseFloat(kline[2]);
+                    const low = parseFloat(kline[3]);
+                    
+                    if (high > highPrice) highPrice = high;
+                    if (low < lowPrice) lowPrice = low;
+                });
+                
+                maxVolumePrice = highPrice;
+                minVolumePrice = lowPrice;
+            }
+            
+            // Final fallback: Gunakan current price ± 5% jika masih zero
+            if (maxVolumePrice === 0 || minVolumePrice === 0) {
+                console.log(`Using current price fallback for ${timeframe}`);
+                maxVolumePrice = currentClose * 1.05;
+                minVolumePrice = currentClose * 0.95;
+            }
+            
             // Use current close price for all timeframes
             this.timeframes[timeframe] = {
                 high: maxVolumePrice,
@@ -121,13 +150,18 @@ class MultiTimeframeBTCCalculator {
                 close: currentClose,
                 startDate: startDate,
                 endDate: endDate,
-                volumeData: priceVolume // Simpan volume data untuk analisis
+                volumeData: priceVolume,
+                trades: timeframeTrades // Simpan trades untuk chart
             };
             
             this.updateDataInfo(timeframe);
             this.updateStatus(`${timeframe} data loaded successfully`, 'success');
             
+            // Update chart with new data
+            this.updateChart(timeframe);
+            
         } catch (error) {
+            console.error(`Error loading ${timeframe} data:`, error);
             this.updateStatus(`Error loading ${timeframe} data`, 'error');
         }
     }
@@ -200,6 +234,34 @@ class MultiTimeframeBTCCalculator {
             <div><strong>Close (Current):</strong> $${data.close.toFixed(2)}</div>
             <div><strong>Pivot:</strong> $${data.levels?.pivot?.toFixed(2) || 'Calculating...'}</div>
         `;
+    }
+    
+    updateChart(timeframe) {
+        if (!btcChart) return;
+        
+        const data = this.timeframes[timeframe];
+        if (!data || !data.trades) return;
+        
+        // Generate candlestick data from trades
+        const candlestickData = btcChart.generateCandlestickData(data.trades, timeframe);
+        
+        // Get support and resistance levels
+        const supportLevels = [
+            data.levels?.s1 || 0,
+            data.levels?.s2 || 0,
+            data.levels?.s3 || 0,
+            data.levels?.s4 || 0
+        ].filter(level => level > 0);
+        
+        const resistanceLevels = [
+            data.levels?.r1 || 0,
+            data.levels?.r2 || 0,
+            data.levels?.r3 || 0,
+            data.levels?.r4 || 0
+        ].filter(level => level > 0);
+        
+        // Update chart
+        btcChart.setData(candlestickData, supportLevels, resistanceLevels, this.currentPrice, timeframe);
     }
     
     updateComparisonTable() {
@@ -359,6 +421,11 @@ function switchTimeframe(timeframe) {
     // Update content
     document.querySelectorAll('.timeframe-content').forEach(content => content.classList.remove('active'));
     document.getElementById(`${timeframe}-content`).classList.add('active');
+    
+    // Update chart for new timeframe
+    if (window.calculator) {
+        window.calculator.updateChart(timeframe);
+    }
 }
 
 // Global functions for JSON operations

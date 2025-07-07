@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>BTC Support & Resistance Calculator - Multi Timeframe</title>
     <link rel="stylesheet" href="styles.css">
+    <script src="chart.js"></script>
 </head>
 <body>
     <div class="container">
@@ -16,6 +17,12 @@
         <div class="price-display">
             <div class="current-price" id="currentPrice">Loading...</div>
             <div id="status" class="status"></div>
+        </div>
+        
+        <!-- Chart Section -->
+        <div class="chart-section">
+            <h3>📈 BTC Price Chart with Support & Resistance</h3>
+            <canvas id="btcChart" width="800" height="300"></canvas>
         </div>
         
         <!-- Data Management Buttons -->

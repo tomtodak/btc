@@ -30,6 +30,28 @@ body {
     color: #00ff88;
 }
 
+.chart-section {
+    background: rgba(255,255,255,0.1);
+    padding: 20px;
+    border-radius: 10px;
+    margin: 20px 0;
+    backdrop-filter: blur(10px);
+    text-align: center;
+}
+
+.chart-section h3 {
+    margin-bottom: 15px;
+    color: #feca57;
+}
+
+#btcChart {
+    width: 100%;
+    max-width: 800px;
+    height: 300px;
+    border-radius: 8px;
+    background: rgba(0,0,0,0.3);
+}
+
 /* Data Management Controls */
 .data-controls {
     display: flex;
