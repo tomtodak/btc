@@ -201,7 +201,7 @@ class MultiTimeframeBTCCalculator {
     
     updateAllDisplays() {
         // Update current price
-        document.getElementById('currentPrice').textContent = `$${this.currentPrice.toFixed(2)}`;
+        document.getElementById('currentPrice').textContent = `$${this.currentPrice.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}`;
         
         // Update all timeframes
         Object.keys(this.timeframes).forEach(timeframe => {
@@ -225,23 +225,23 @@ class MultiTimeframeBTCCalculator {
         Object.keys(levels).forEach(level => {
             const element = document.getElementById(`${timeframe}-${level}`);
             if (element) {
-                element.textContent = `$${levels[level].toFixed(2)}`;
+                element.textContent = `$${levels[level].toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}`;
             }
         });
 
         // Update pivot card with current price instead of pivot
         const pivotElement = document.getElementById(`${timeframe}-pivot`);
         if (pivotElement) {
-            pivotElement.textContent = `$${this.currentPrice.toFixed(2)}`;
+            pivotElement.textContent = `$${this.currentPrice.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}`;
         }
 
         // Update High, Low, Close
         const highEl = document.getElementById(`${timeframe}-high`);
         const lowEl = document.getElementById(`${timeframe}-low`);
         const closeEl = document.getElementById(`${timeframe}-close`);
-        if (highEl) highEl.textContent = data.high ? `$${data.high.toFixed(2)}` : '-';
-        if (lowEl) lowEl.textContent = data.low ? `$${data.low.toFixed(2)}` : '-';
-        if (closeEl) closeEl.textContent = data.close ? `$${data.close.toFixed(2)}` : '-';
+        if (highEl) highEl.textContent = data.high ? `$${data.high.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}` : '-';
+        if (lowEl) lowEl.textContent = data.low ? `$${data.low.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}` : '-';
+        if (closeEl) closeEl.textContent = data.close ? `$${data.close.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}` : '-';
 
         // Update suggestion
         this.updateSuggestion(timeframe);
@@ -284,10 +284,10 @@ class MultiTimeframeBTCCalculator {
         
         dataInfo.innerHTML = `
             <div><strong>Period:</strong> ${startStr} - ${endStr}</div>
-            <div><strong>High (Most Bought):</strong> $${data.high.toFixed(2)}</div>
-            <div><strong>Low (Most Sold):</strong> $${data.low.toFixed(2)}</div>
-            <div><strong>Close (Current):</strong> $${data.close.toFixed(2)}</div>
-            <div><strong>Pivot:</strong> $${data.levels?.pivot?.toFixed(2) || 'Calculating...'}</div>
+            <div><strong>High (Most Bought):</strong> $${data.high.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</div>
+            <div><strong>Low (Most Sold):</strong> $${data.low.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</div>
+            <div><strong>Close (Current):</strong> $${data.close.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</div>
+            <div><strong>Pivot:</strong> $${data.levels?.pivot?.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) || 'Calculating...'}</div>
         `;
     }
     
@@ -327,9 +327,9 @@ class MultiTimeframeBTCCalculator {
         levels.forEach(level => {
             tableHTML += '<tr>';
             tableHTML += `<td><strong>${level.toUpperCase()}</strong></td>`;
-            tableHTML += `<td>$${this.timeframes.daily.levels[level]?.toFixed(2) || '-'}</td>`;
-            tableHTML += `<td>$${this.timeframes.weekly.levels[level]?.toFixed(2) || '-'}</td>`;
-            tableHTML += `<td>$${this.timeframes.monthly.levels[level]?.toFixed(2) || '-'}</td>`;
+            tableHTML += `<td>$${this.timeframes.daily.levels[level]?.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) || '-'}</td>`;
+            tableHTML += `<td>$${this.timeframes.weekly.levels[level]?.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) || '-'}</td>`;
+            tableHTML += `<td>$${this.timeframes.monthly.levels[level]?.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) || '-'}</td>`;
             tableHTML += '</tr>';
         });
         
