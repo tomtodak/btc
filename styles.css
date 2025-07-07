@@ -571,4 +571,8 @@ body {
     margin-top: 0;
     text-align: center;
     font-weight: 500;
+}
+.next-target + .next-target {
+    margin-top: 0;
+    margin-bottom: 0;
 } 
