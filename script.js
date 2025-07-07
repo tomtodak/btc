@@ -477,7 +477,7 @@ class MultiTimeframeBTCCalculator {
             const data = this.timeframes[tf];
             const levels = data.levels;
             let srSuggestion = '-', vtSuggestion = '-', taSuggestion = '-';
-            let srTarget = '', vtTarget = '', taTarget = '';
+            let taTarget = '';
             let info = '';
             if (levels && data.high && data.low && data.close) {
                 const current = this.currentPrice;
@@ -485,34 +485,26 @@ class MultiTimeframeBTCCalculator {
                 // SR suggestion
                 if (current <= levels.s1 * 1.01) {
                     srSuggestion = 'BUY';
-                    srTarget = `Next Target: R1 $${levels.r1.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}`;
                 } else if (current >= levels.r1 * 0.99) {
                     srSuggestion = 'SELL';
-                    srTarget = `Next Support: S1 $${levels.s1.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}`;
                 } else {
                     srSuggestion = 'HOLD';
-                    srTarget = `R1: $${levels.r1.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}, S1: $${levels.s1.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}`;
                 }
 
                 // VT suggestion
                 if (Math.abs(current - data.high) < Math.abs(current - data.low)) {
                     if (Math.abs(current - data.high) < 1) {
                         vtSuggestion = 'HOLD';
-                        vtTarget = `R1: $${levels.r1.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}, S1: $${levels.s1.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}`;
                     } else if (data.high > current) {
                         vtSuggestion = 'LOCK PROFIT';
-                        vtTarget = `Next Support: S1 $${levels.s1.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}`;
                     } else {
                         vtSuggestion = 'BUY';
-                        vtTarget = `Next Target: R1 $${levels.r1.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}`;
                     }
                 } else {
                     if (data.low > current) {
                         vtSuggestion = 'SELL';
-                        vtTarget = `Next Support: S1 $${levels.s1.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}`;
                     } else {
                         vtSuggestion = 'BUY';
-                        vtTarget = `Next Target: R1 $${levels.r1.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}`;
                     }
                 }
 
@@ -528,21 +520,23 @@ class MultiTimeframeBTCCalculator {
                 } else {
                     taSuggestion = 'CAUTION';
                 }
-                // Target untuk TA ikut suggestion TA
-                if (taSuggestion.includes('BUY')) {
-                    taTarget = `Next Target: R1 $${levels.r1.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}`;
-                } else if (taSuggestion.includes('SELL')) {
-                    taTarget = `Next Support: S1 $${levels.s1.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}`;
-                } else if (taSuggestion === 'LOCK PROFIT') {
-                    taTarget = `Next Support: S1 $${levels.s1.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}`;
-                } else {
-                    taTarget = `R1: $${levels.r1.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}, S1: $${levels.s1.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}`;
+
+                // Next target/support untuk TA
+                if (taSuggestion === 'HOLD' || taSuggestion === 'CAUTION') {
+                    taTarget = `
+                        <div class='next-target'>Next Target: R1 $${levels.r1.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</div>
+                        <div class='next-target'>Next Support: S1 $${levels.s1.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</div>
+                    `;
+                } else if (taSuggestion.includes('BUY')) {
+                    taTarget = `<div class='next-target'>Next Target: R1 $${levels.r1.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</div>`;
+                } else if (taSuggestion.includes('SELL') || taSuggestion === 'LOCK PROFIT') {
+                    taTarget = `<div class='next-target'>Next Support: S1 $${levels.s1.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</div>`;
                 }
 
                 info = `
-                    <div class='next-target'>${taTarget}</div>
-                    <div><b>SR</b>: ${srSuggestion} <span style="font-size:0.95em;color:#ffe066;">${srTarget}</span></div>
-                    <div><b>VT</b>: ${vtSuggestion} <span style="font-size:0.95em;color:#ffe066;">${vtTarget}</span></div>
+                    ${taTarget}
+                    <div><b>SR</b>: ${srSuggestion}</div>
+                    <div><b>VT</b>: ${vtSuggestion}</div>
                     <div style="margin-top:8px;">Current Price: <b>$${current.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</b></div>
                     <div>Most Bought: <b>$${data.high.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</b></div>
                     <div>Most Sold: <b>$${data.low.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</b></div>
@@ -550,7 +544,7 @@ class MultiTimeframeBTCCalculator {
             }
             // Papar TA sahaja di bold putih
             document.getElementById(`summary-${tf}-suggestion`).textContent = taSuggestion;
-            // Papar next target TA di bawah, kemudian SR & VT, kemudian info harga
+            // Papar next target/support TA di bawah, kemudian SR & VT, kemudian info harga
             document.getElementById(`summary-${tf}-info`).innerHTML = info;
         });
     }
