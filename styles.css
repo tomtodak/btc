@@ -565,10 +565,10 @@ body {
 }
 
 .next-target {
-    font-size: 0.85em;
+    font-size: 0.75em;
     color: #ffe066;
     margin-bottom: 8px;
-    margin-top: 2px;
+    margin-top: 0;
     text-align: center;
     font-weight: 500;
 } 
