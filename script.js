@@ -720,6 +720,17 @@ class MultiTimeframeBTCCalculator {
                     className = 'suggestion-sell';
                 }
             }
+        } else {
+            // Fallback sentiasa keluar suggestion default
+            action = 'HOLD';
+            price = this.currentPrice;
+            reason = 'No strong signal. Data volume tidak cukup atau belum dimuatkan.';
+            volumeAnalysis = 'Volume data kosong atau tidak cukup untuk analisa.';
+            className = 'suggestion-hold';
+            // Log ke console untuk debug
+            console.warn('[SUMMARY SUGGESTION] Data volume kosong atau tidak cukup:', {
+                dailyVolume, dailyBidVolume, maxVolumePrice, maxBidVolumePrice
+            });
         }
         
         return {
