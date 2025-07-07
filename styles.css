@@ -408,6 +408,25 @@ body {
     color: #ffe066;
     font-weight: bold;
     box-shadow: 0 0 8px #ffe06644;
+    padding: 12px 10px;
+    min-height: 60px;
+    max-height: 70px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+.level-card.pivot .level-title {
+    font-size: 0.95em;
+    margin-bottom: 2px;
+    letter-spacing: 0.5px;
+}
+
+.level-card.pivot .price-value {
+    font-size: 1.25em;
+    font-weight: bold;
+    margin-top: 2px;
 }
 
 @media (max-width: 900px) {
