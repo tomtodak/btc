@@ -524,7 +524,7 @@ class MultiTimeframeBTCCalculator {
                 // Next target/support untuk TA
                 if (taSuggestion === 'HOLD' || taSuggestion === 'CAUTION') {
                     taTarget = `
-                        <div class='next-target'>Next Target: R1 $${levels.r1.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</div>
+                        <div class='next-target' style='margin-bottom:0;'>Next Target: R1 $${levels.r1.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</div>
                         <div class='next-target'>Next Support: S1 $${levels.s1.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</div>
                     `;
                 } else if (taSuggestion.includes('BUY')) {
