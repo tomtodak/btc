@@ -18,6 +18,13 @@
             <div id="status" class="status"></div>
         </div>
         
+        <!-- Data Management Buttons -->
+        <div class="data-controls">
+            <button class="control-btn" onclick="exportData()">📊 Export Data</button>
+            <button class="control-btn" onclick="loadDataFromFile()">📁 Import Data</button>
+            <button class="control-btn" onclick="getDataSummary()">📋 Data Summary</button>
+        </div>
+        
         <div class="timeframe-tabs">
             <button class="tab active" onclick="switchTimeframe('daily')">📅 Daily</button>
             <button class="tab" onclick="switchTimeframe('weekly')">📊 Weekly</button>

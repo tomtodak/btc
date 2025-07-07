@@ -7,6 +7,7 @@ class MultiTimeframeBTCCalculator {
             monthly: { high: 0, low: 0, close: 0, levels: {} }
         };
         this.currentTimeframe = 'daily';
+        this.dataHistory = [];
         this.init();
     }
     
@@ -17,6 +18,7 @@ class MultiTimeframeBTCCalculator {
         this.updateAllDisplays();
         this.updateComparisonTable();
         this.startRealTimeUpdates();
+        this.saveDataToJSON();
     }
     
     async getCurrentPrice() {
@@ -118,7 +120,8 @@ class MultiTimeframeBTCCalculator {
                 low: minVolumePrice,
                 close: currentClose,
                 startDate: startDate,
-                endDate: endDate
+                endDate: endDate,
+                volumeData: priceVolume // Simpan volume data untuk analisis
             };
             
             this.updateDataInfo(timeframe);
@@ -222,11 +225,118 @@ class MultiTimeframeBTCCalculator {
         statusElement.className = `status ${type}`;
     }
     
+    // JSON Data Storage Functions
+    saveDataToJSON() {
+        const dataToSave = {
+            timestamp: new Date().toISOString(),
+            currentPrice: this.currentPrice,
+            timeframes: this.timeframes,
+            metadata: {
+                version: "1.0.0",
+                description: "BTC Support & Resistance Calculator Data",
+                generatedBy: "MultiTimeframeBTCCalculator"
+            }
+        };
+        
+        // Simpan ke localStorage untuk backup
+        localStorage.setItem('btcCalculatorData', JSON.stringify(dataToSave));
+        
+        // Tambah ke history
+        this.dataHistory.push(dataToSave);
+        
+        // Simpan history (max 100 entries)
+        if (this.dataHistory.length > 100) {
+            this.dataHistory = this.dataHistory.slice(-100);
+        }
+        
+        localStorage.setItem('btcCalculatorHistory', JSON.stringify(this.dataHistory));
+        
+        console.log('Data saved to JSON:', dataToSave);
+    }
+    
+    exportDataToFile() {
+        const dataToExport = {
+            timestamp: new Date().toISOString(),
+            currentPrice: this.currentPrice,
+            timeframes: this.timeframes,
+            history: this.dataHistory,
+            metadata: {
+                version: "1.0.0",
+                description: "BTC Support & Resistance Calculator Data Export",
+                generatedBy: "MultiTimeframeBTCCalculator",
+                exportDate: new Date().toISOString()
+            }
+        };
+        
+        const dataStr = JSON.stringify(dataToExport, null, 2);
+        const dataBlob = new Blob([dataStr], {type: 'application/json'});
+        
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(dataBlob);
+        link.download = `btc-calculator-data-${new Date().toISOString().split('T')[0]}.json`;
+        link.click();
+        
+        this.updateStatus('Data exported to JSON file successfully', 'success');
+    }
+    
+    loadDataFromJSON(jsonData) {
+        try {
+            const data = typeof jsonData === 'string' ? JSON.parse(jsonData) : jsonData;
+            
+            if (data.timeframes) {
+                this.timeframes = data.timeframes;
+                this.currentPrice = data.currentPrice || 0;
+                
+                // Update displays
+                this.updateAllDisplays();
+                this.updateComparisonTable();
+                
+                // Update data info for each timeframe
+                Object.keys(this.timeframes).forEach(timeframe => {
+                    this.updateDataInfo(timeframe);
+                });
+                
+                this.updateStatus('Data loaded from JSON successfully', 'success');
+                return true;
+            } else {
+                throw new Error('Invalid data format');
+            }
+        } catch (error) {
+            this.updateStatus('Error loading data from JSON', 'error');
+            return false;
+        }
+    }
+    
+    getDataSummary() {
+        const summary = {
+            currentPrice: this.currentPrice,
+            daily: {
+                pivot: this.timeframes.daily.levels?.pivot || 0,
+                r1: this.timeframes.daily.levels?.r1 || 0,
+                s1: this.timeframes.daily.levels?.s1 || 0
+            },
+            weekly: {
+                pivot: this.timeframes.weekly.levels?.pivot || 0,
+                r1: this.timeframes.weekly.levels?.r1 || 0,
+                s1: this.timeframes.weekly.levels?.s1 || 0
+            },
+            monthly: {
+                pivot: this.timeframes.monthly.levels?.pivot || 0,
+                r1: this.timeframes.monthly.levels?.r1 || 0,
+                s1: this.timeframes.monthly.levels?.s1 || 0
+            },
+            timestamp: new Date().toISOString()
+        };
+        
+        return summary;
+    }
+    
     startRealTimeUpdates() {
         // Update current price every 10 seconds
         setInterval(async () => {
             await this.getCurrentPrice();
             this.updateAllDisplays();
+            this.saveDataToJSON(); // Simpan data setiap update
         }, 10000);
         
         // Update all timeframes every 5 minutes
@@ -235,6 +345,7 @@ class MultiTimeframeBTCCalculator {
             this.calculateAllLevels();
             this.updateAllDisplays();
             this.updateComparisonTable();
+            this.saveDataToJSON(); // Simpan data setiap update
         }, 300000);
     }
 }
@@ -250,7 +361,41 @@ function switchTimeframe(timeframe) {
     document.getElementById(`${timeframe}-content`).classList.add('active');
 }
 
+// Global functions for JSON operations
+function exportData() {
+    if (window.calculator) {
+        window.calculator.exportDataToFile();
+    }
+}
+
+function loadDataFromFile() {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json';
+    input.onchange = function(e) {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                if (window.calculator) {
+                    window.calculator.loadDataFromJSON(e.target.result);
+                }
+            };
+            reader.readAsText(file);
+        }
+    };
+    input.click();
+}
+
+function getDataSummary() {
+    if (window.calculator) {
+        const summary = window.calculator.getDataSummary();
+        console.log('Data Summary:', summary);
+        return summary;
+    }
+}
+
 // Initialize the calculator when DOM is loaded
 document.addEventListener('DOMContentLoaded', function() {
-    const calculator = new MultiTimeframeBTCCalculator();
+    window.calculator = new MultiTimeframeBTCCalculator();
 }); 
