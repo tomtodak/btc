@@ -32,32 +32,23 @@
             <p style="margin-top: 8px;">Multi-Timeframe Analysis (Daily, Weekly, Monthly) by tOm</p>
         </div>
         
+        <!-- Centered Tab Navigation -->
+        <div class="tab-nav center-tabs">
+          <button class="tab-button" data-timeframe="daily">Daily</button>
+          <button class="tab-button" data-timeframe="weekly">Weekly</button>
+          <button class="tab-button" data-timeframe="monthly">Monthly</button>
+          <button class="tab-button" data-timeframe="summary">Summary</button>
+          <button class="tab-button" data-timeframe="converter">Converter</button>
+          <button class="tab-button" data-timeframe="calculator">Calculator</button>
+        </div>
+        
         <div class="price-display">
             <div class="current-price" id="currentPrice">Loading...</div>
             <div id="status" class="status"></div>
         </div>
         
         <div class="chart-container">
-            <canvas id="btcChart" width="1200" height="600"></canvas>
-            <div id="summary-cards-wrapper" style="display:none;">
-                <div class="summary-cards">
-                    <div class="summary-card" id="summary-daily-card">
-                        <div class="summary-title">Daily</div>
-                        <div class="summary-suggestion" id="summary-daily-suggestion">-</div>
-                        <div class="summary-info" id="summary-daily-info">-</div>
-                    </div>
-                    <div class="summary-card" id="summary-weekly-card">
-                        <div class="summary-title">Weekly</div>
-                        <div class="summary-suggestion" id="summary-weekly-suggestion">-</div>
-                        <div class="summary-info" id="summary-weekly-info">-</div>
-                    </div>
-                    <div class="summary-card" id="summary-monthly-card">
-                        <div class="summary-title">Monthly</div>
-                        <div class="summary-suggestion" id="summary-monthly-suggestion">-</div>
-                        <div class="summary-info" id="summary-monthly-info">-</div>
-                    </div>
-                </div>
-            </div>
+            <canvas id="btcChart" width="1200" height="600" style="display:block;"></canvas>
             
             <!-- Converter Wrapper -->
             <div id="converter-wrapper" style="display:none;">
@@ -76,6 +67,11 @@
                             </div>
                         </div>
                     </div>
+                    <div id="converter-ta-suggestion" class="converter-ta-suggestion" style="text-align:center; margin-bottom: 18px;">
+  <div id="converter-ta-daily"></div>
+  <div id="converter-ta-weekly"></div>
+  <div id="converter-ta-monthly"></div>
+</div>
                     
                     <div class="conversion-cards">
                         <div class="conversion-card usd-card">
@@ -122,16 +118,97 @@
                     <div class="converter-rate-info" id="converter-rate-info"></div>
                 </div>
             </div>
+            <!-- Calculator Tab Content (centered, replaces chart, no chart in DOM) -->
+            <div id="calculator-content" class="timeframe-content" style="display:none; justify-content:center; align-items:center;">
+              <div class="converter-main" style="margin: 0 auto;">
+                <div class="converter-header">
+                  <h2>🧮 BTC Profit/Loss Calculator</h2>
+                  <p class="converter-subtitle">Calculate your BTC trade profit/loss in multiple currencies</p>
+                </div>
+                <div class="converter-input-section">
+                  <div class="btc-input-wrapper">
+                    <label for="calc-btc-main">BTC Bought:</label>
+                    <div class="btc-input-group">
+                      <input type="number" id="calc-btc-main" step="any" min="0" placeholder="0.0000" class="btc-main-input">
+                      <span class="btc-symbol">₿</span>
+                    </div>
+                  </div>
+                  <div class="btc-input-wrapper">
+                    <label for="calc-sell-btc">BTC to Sell:</label>
+                    <div class="btc-input-group">
+                      <input type="number" id="calc-sell-btc" step="any" min="0" placeholder="0.0000" class="btc-main-input">
+                      <span class="btc-symbol">₿</span>
+                    </div>
+                  </div>
+                  <div class="btc-input-wrapper">
+                    <label for="calc-entry-price">Entry Price:</label>
+                    <div class="btc-input-group">
+                      <input type="number" id="calc-entry-price" min="0" step="any" placeholder="0.00" class="btc-main-input">
+                      <span class="btc-symbol">$</span>
+                    </div>
+                  </div>
+                </div>
+                <div class="conversion-cards">
+                  <div class="conversion-card usd-card">
+                    <div class="card-icon">💵</div>
+                    <div class="card-content">
+                      <div class="card-label">US Dollar</div>
+                      <div class="card-value" id="calc-usd-profit">$0.00</div>
+                      <div class="card-symbol">USD</div>
+                      <div class="sr-target-list" id="calc-sr-target-usd"></div>
+                    </div>
+                  </div>
+                  <div class="conversion-card myr-card">
+                    <div class="card-icon">🇲🇾</div>
+                    <div class="card-content">
+                      <div class="card-label">Malaysian Ringgit</div>
+                      <div class="card-value" id="calc-myr-profit">RM 0.00</div>
+                      <div class="card-symbol">MYR</div>
+                      <div class="sr-target-list" id="calc-sr-target-myr"></div>
+                    </div>
+                  </div>
+                  <div class="conversion-card cny-card">
+                    <div class="card-icon">🇨🇳</div>
+                    <div class="card-content">
+                      <div class="card-label">Chinese Yuan</div>
+                      <div class="card-value" id="calc-cny-profit">¥0.00</div>
+                      <div class="card-symbol">CNY</div>
+                      <div class="sr-target-list" id="calc-sr-target-cny"></div>
+                    </div>
+                  </div>
+                  <div class="conversion-card idr-card">
+                    <div class="card-icon">🇮🇩</div>
+                    <div class="card-content">
+                      <div class="card-label">Indonesian Rupiah</div>
+                      <div class="card-value" id="calc-idr-profit">Rp 0</div>
+                      <div class="card-symbol">IDR</div>
+                      <div class="sr-target-list" id="calc-sr-target-idr"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
         </div>
         
-        <div class="main-content">
-            <div class="levels-section">
-                <div class="timeframe-tabs">
-                    <button class="tab-button active" data-timeframe="daily">Daily</button>
-                    <button class="tab-button" data-timeframe="weekly">Weekly</button>
-                    <button class="tab-button" data-timeframe="monthly">Monthly</button>
-                    <button class="tab-button" data-timeframe="summary">Summary</button>
-                    <button class="tab-button" data-timeframe="converter">Converter</button>
+        <!-- Place summary-cards-wrapper as standalone after chart-container -->
+        <div id="summary-cards-wrapper" style="display:none;">
+            <div class="summary-cards">
+                <div class="summary-card" id="summary-daily-card">
+                    <div class="summary-title">Daily</div>
+                    <div class="summary-suggestion" id="summary-daily-suggestion">-</div>
+                    <div class="summary-info" id="summary-daily-info">-</div>
+                </div>
+                <div class="summary-card" id="summary-weekly-card">
+                    <div class="summary-title">Weekly</div>
+                    <div class="summary-suggestion" id="summary-weekly-suggestion">-</div>
+                    <div class="summary-info" id="summary-weekly-info">-</div>
+                </div>
+                <div class="summary-card" id="summary-monthly-card">
+                    <div class="summary-title">Monthly</div>
+                    <div class="summary-suggestion" id="summary-monthly-suggestion">-</div>
+                    <div class="summary-info" id="summary-monthly-info">-</div>
+                </div>
+            </div>
                 </div>
                 
                 <!-- Daily Content -->

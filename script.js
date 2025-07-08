@@ -602,6 +602,8 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function updateChartWithTimeframe(timeframe) {
+    // Prevent chart update if calculator tab is active
+    if (timeframe === 'calculator') return;
     // Update chart S/R lines based on selected timeframe
     if (window.btcChart && window.calculator) {
         // Update current timeframe
@@ -1031,6 +1033,286 @@ const btcInput = document.getElementById('conv-btc-main');
 if (btcInput) {
     btcInput.addEventListener('input', renderSRTargetInConverter);
 }
+
+function updateConverterTASuggestion() {
+    const timeframes = ['daily', 'weekly', 'monthly'];
+    const labels = { daily: 'Daily', weekly: 'Weekly', monthly: 'Monthly' };
+    timeframes.forEach(tf => {
+        const data = window.calculator?.timeframes?.[tf];
+        const el = document.getElementById(`converter-ta-${tf}`);
+        if (!data || !data.levels || !el) return;
+        const levels = data.levels;
+        const current = window.calculator?.currentPrice || 0;
+        let srSuggestion = '-', vtSuggestion = '-', hvSuggestion = '-', taSuggestion = '-';
+        // SR suggestion
+        if (current <= levels.s1 * 1.01) {
+            srSuggestion = 'BUY';
+        } else if (current >= levels.r1 * 0.99) {
+            srSuggestion = 'SELL';
+        } else {
+            srSuggestion = 'HOLD';
+        }
+        // VT suggestion (ikut summary logic)
+        if (Math.abs(current - data.high) < Math.abs(current - data.low)) {
+            if (Math.abs(current - data.high) < 1) {
+                vtSuggestion = 'HOLD';
+            } else if (data.high > current) {
+                vtSuggestion = 'LOCK PROFIT';
+            } else {
+                vtSuggestion = 'BUY';
+            }
+        } else {
+            if (data.low > current) {
+                vtSuggestion = 'SELL';
+            } else {
+                vtSuggestion = 'BUY';
+            }
+        }
+        // HV suggestion (ikut summary logic)
+        let highVolumeBuy = data.volumeData?.[data.high]?.buy || 0;
+        let highVolumeSell = data.volumeData?.[data.low]?.sell || 0;
+        if (highVolumeBuy > highVolumeSell) {
+            hvSuggestion = 'BUY';
+        } else if (highVolumeSell > highVolumeBuy) {
+            hvSuggestion = 'SELL';
+        } else {
+            hvSuggestion = 'HOLD';
+        }
+        // Combine TA logic (majority)
+        const signals = [srSuggestion, vtSuggestion, hvSuggestion];
+        const buyCount = signals.filter(s => s.includes('BUY')).length;
+        const sellCount = signals.filter(s => s.includes('SELL')).length;
+        if (buyCount >= 2) taSuggestion = 'BUY';
+        else if (sellCount >= 2) taSuggestion = 'SELL';
+        else taSuggestion = 'HOLD';
+        let className = '';
+        if (taSuggestion === 'BUY') className = 'converter-ta-buy';
+        else if (taSuggestion === 'SELL') className = 'converter-ta-sell';
+        else className = 'converter-ta-hold';
+        el.innerHTML = `<div class='converter-ta-suggestion-row'><div class='converter-ta-label'>${labels[tf]}</div><div class='converter-ta-value ${className}'>${taSuggestion}</div></div>`;
+    });
+}
+// Call on load and whenever BTC input or price changes
+if (typeof window !== 'undefined') {
+    document.addEventListener('DOMContentLoaded', updateConverterTASuggestion);
+}
+const origRenderSRTargetInConverter = window.renderSRTargetInConverter;
+window.renderSRTargetInConverter = function() {
+    origRenderSRTargetInConverter && origRenderSRTargetInConverter();
+    updateConverterTASuggestion();
+};
+const btcInput2 = document.getElementById('conv-btc-main');
+if (btcInput2) {
+    btcInput2.addEventListener('input', updateConverterTASuggestion);
+}
+
+// === Calculator Tab Logic (NEW, like converter) ===
+function updateCalculatorTab() {
+    // Get input values
+    const btcInput = document.getElementById('calc-btc-main');
+    const sellInput = document.getElementById('calc-sell-btc');
+    const entryInput = document.getElementById('calc-entry-price');
+    const btcAmount = parseFloat(btcInput?.value) || 0;
+    const sellAmount = Math.min(parseFloat(sellInput?.value) || 0, btcAmount);
+    const entryPrice = parseFloat(entryInput?.value) || 0;
+    const balanceBtc = Math.max(btcAmount - sellAmount, 0);
+
+    // Helper for price conversion (use only window.converterRates for all except USD)
+    const getPrice = (base, cur) => {
+        if (cur === 'USD') return base;
+        if (cur === 'MYR') return base * (window.converterRates?.MYR || 0);
+        if (cur === 'CNY') return base * (window.converterRates?.CNY || 0);
+        if (cur === 'IDR') return base * (window.converterRates?.IDR || 0);
+        return base;
+    };
+    // Use formatConv for consistency with converter tab
+    const format = (v, cur) => {
+        if (cur === 'USD') return `$${formatConv(v, 2)}`;
+        if (cur === 'MYR') return `RM ${formatConv(v, 2)}`;
+        if (cur === 'CNY') return `¥${formatConv(v, 2)}`;
+        if (cur === 'IDR') return `Rp ${formatConv(v, 0)}`;
+        return v.toLocaleString();
+    };
+
+    // Get current price (USD base)
+    const currentPriceUSD = window.calculator?.currentPrice || 0;
+    // Get daily S/R levels (USD base)
+    const levels = window.calculator?.timeframes?.daily?.levels || {};
+    const data = window.calculator?.timeframes?.daily || {};
+
+    // For each currency card
+    const currencies = [
+        { id: 'usd', symbol: 'USD', icon: '💵', label: 'US Dollar' },
+        { id: 'myr', symbol: 'MYR', icon: '🇲🇾', label: 'Malaysian Ringgit' },
+        { id: 'cny', symbol: 'CNY', icon: '🇨🇳', label: 'Chinese Yuan' },
+        { id: 'idr', symbol: 'IDR', icon: '🇮🇩', label: 'Indonesian Rupiah' },
+    ];
+    currencies.forEach(cur => {
+        // Current price, entry price, etc. in this currency
+        const currentPrice = getPrice(currentPriceUSD, cur.symbol);
+        const entryPriceCur = getPrice(entryPrice, cur.symbol);
+        const r1 = getPrice(levels.r1 || 0, cur.symbol);
+        const s1 = getPrice(levels.s1 || 0, cur.symbol);
+        const high = getPrice(data.high || 0, cur.symbol);
+        const low = getPrice(data.low || 0, cur.symbol);
+        // Output elements
+        const profitEl = document.getElementById(`calc-${cur.id}-profit`);
+        const srTargetEl = document.getElementById(`calc-sr-target-${cur.id}`);
+        // Calculations
+        const totalCost = entryPriceCur * btcAmount;
+        const currentValue = currentPrice * sellAmount;
+        const profitLoss = (currentPrice - entryPriceCur) * sellAmount;
+        // Main profit/loss output
+        let profitText = '';
+        let profitClass = '';
+        if (sellAmount > 0) {
+            profitText = `${profitLoss >= 0 ? '+' : ''}${format(profitLoss, cur.symbol)}`;
+            profitClass = profitLoss > 0 ? 'positive' : (profitLoss < 0 ? 'negative' : '');
+        } else {
+            profitText = '-';
+            profitClass = '';
+        }
+        profitEl.textContent = profitText;
+        profitEl.classList.remove('positive', 'negative');
+        if (profitClass) profitEl.classList.add(profitClass);
+        // S/R target section (match converter tab layout)
+        let srHtml = '';
+        srHtml += '<ul class="sr-target-list-info">';
+        srHtml += `<li><span class='sr-label'>Current Price:</span> <span class='sr-value'>${format(currentPrice, cur.symbol)}</span></li>`;
+        srHtml += `<li><span class='sr-label'>Next Target:</span> <span class='sr-value'>${format(r1, cur.symbol)}</span></li>`;
+        srHtml += `<li><span class='sr-label'>Next Support:</span> <span class='sr-value'>${format(s1, cur.symbol)}</span></li>`;
+        srHtml += `<li><span class='sr-label'>Most Bought:</span> <span class='sr-value'>${format(high, cur.symbol)}</span></li>`;
+        srHtml += `<li><span class='sr-label'>Most Sold:</span> <span class='sr-value'>${format(low, cur.symbol)}</span></li>`;
+        srHtml += '</ul>';
+        // --- TA summary logic (majority) ---
+        let srSuggestion = '-', vtSuggestion = '-', hvSuggestion = '-', taSuggestion = '-';
+        // SR
+        if (currentPrice <= s1 * 1.01) srSuggestion = 'BUY';
+        else if (currentPrice >= r1 * 0.99) srSuggestion = 'SELL';
+        else srSuggestion = 'HOLD';
+        // VT
+        if (Math.abs(currentPrice - high) < Math.abs(currentPrice - low)) {
+            if (Math.abs(currentPrice - high) < 1) vtSuggestion = 'HOLD';
+            else if (high > currentPrice) vtSuggestion = 'LOCK PROFIT';
+            else vtSuggestion = 'BUY';
+        } else {
+            if (low > currentPrice) vtSuggestion = 'SELL';
+            else vtSuggestion = 'BUY';
+        }
+        // HV
+        let highVolumeBuy = data.volumeData?.[data.high]?.buy || 0;
+        let highVolumeSell = data.volumeData?.[data.low]?.sell || 0;
+        if (highVolumeBuy > highVolumeSell) hvSuggestion = 'BUY';
+        else if (highVolumeSell > highVolumeBuy) hvSuggestion = 'SELL';
+        else hvSuggestion = 'HOLD';
+        // Combine
+        const signals = [srSuggestion, vtSuggestion, hvSuggestion];
+        const buyCount = signals.filter(s => s.includes('BUY')).length;
+        const sellCount = signals.filter(s => s.includes('SELL')).length;
+        if (buyCount >= 2) taSuggestion = 'BUY';
+        else if (sellCount >= 2) taSuggestion = 'SELL';
+        else taSuggestion = 'HOLD';
+        // Gain/risk (NEW FORMULA for calculator tab only)
+        let gain = null, risk = null;
+        if (balanceBtc > 0 && levels.r1 && levels.s1) {
+            if (taSuggestion === 'BUY') gain = r1 * balanceBtc;
+            else if (taSuggestion === 'SELL' || taSuggestion === 'LOCK PROFIT') risk = s1 * balanceBtc;
+            else if (taSuggestion === 'HOLD' || taSuggestion === 'CAUTION') {
+                gain = r1 * balanceBtc;
+                risk = s1 * balanceBtc;
+            }
+        }
+        srHtml += '<ul>';
+        srHtml += `<li><span class='sr-label'>Balance BTC:</span> <span class='sr-value'>${balanceBtc.toFixed(8)}</span></li>`;
+        if (gain !== null) srHtml += `<li><span class='sr-label'>Reward Value:</span> <span class='sr-value sr-gain'>${gain >= 0 ? '+' : ''}${format(Math.abs(gain), cur.symbol)}</span></li>`;
+        if (risk !== null) srHtml += `<li><span class='sr-label'>Risk Value:</span> <span class='sr-value sr-risk'>-${format(Math.abs(risk), cur.symbol)}</span></li>`;
+        srHtml += '</ul>';
+        srTargetEl.innerHTML = srHtml;
+    });
+}
+
+function setupCalculatorTab() {
+    const btcInput = document.getElementById('calc-btc-main');
+    const sellInput = document.getElementById('calc-sell-btc');
+    const entryInput = document.getElementById('calc-entry-price');
+    [btcInput, sellInput, entryInput].forEach(el => {
+        if (el) el.addEventListener('input', updateCalculatorTab);
+    });
+}
+document.addEventListener('DOMContentLoaded', function() {
+    setupCalculatorTab();
+    setInterval(updateCalculatorTab, 5000);
+});
+
+// Show/hide calculator tab content on tab switch
+(function() {
+    const tabButtons = document.querySelectorAll('.tab-button');
+    const chartContainer = document.querySelector('.chart-container');
+    const chartCanvas = document.getElementById('btcChart');
+    const summaryCards = document.getElementById('summary-cards-wrapper');
+    const converterWrapper = document.getElementById('converter-wrapper');
+    const calculatorContent = document.getElementById('calculator-content');
+    let chartWasRemoved = false;
+    tabButtons.forEach(btn => {
+        btn.addEventListener('click', function() {
+            const tf = this.getAttribute('data-timeframe');
+            document.querySelectorAll('.timeframe-content').forEach(content => {
+                if (content.id === tf + '-content') {
+                    content.style.display = 'block';
+                } else {
+                    content.style.display = 'none';
+                }
+            });
+            // Show/hide chart, summary, converter, calculator
+            if (tf === 'summary') {
+                if (chartCanvas && chartContainer && !chartContainer.contains(chartCanvas)) {
+                    chartContainer.insertBefore(chartCanvas, chartContainer.firstChild);
+                    chartCanvas.style.display = 'none';
+                    chartWasRemoved = false;
+                }
+                if (chartCanvas) chartCanvas.style.display = 'none';
+                if (summaryCards) summaryCards.style.display = 'block';
+                if (converterWrapper) converterWrapper.style.display = 'none';
+                if (calculatorContent) calculatorContent.style.display = 'none';
+            } else if (tf === 'converter') {
+                if (chartCanvas && chartContainer && !chartContainer.contains(chartCanvas)) {
+                    chartContainer.insertBefore(chartCanvas, chartContainer.firstChild);
+                    chartCanvas.style.display = 'none';
+                    chartWasRemoved = false;
+                }
+                if (chartCanvas) chartCanvas.style.display = 'none';
+                if (summaryCards) summaryCards.style.display = 'none';
+                if (converterWrapper) converterWrapper.style.display = 'block';
+                if (calculatorContent) calculatorContent.style.display = 'none';
+            } else if (tf === 'calculator') {
+                if (chartCanvas && chartContainer && chartContainer.contains(chartCanvas)) {
+                    chartContainer.removeChild(chartCanvas);
+                    chartWasRemoved = true;
+                }
+                if (summaryCards) summaryCards.style.display = 'none';
+                if (converterWrapper) converterWrapper.style.display = 'none';
+                if (calculatorContent) calculatorContent.style.display = 'flex';
+            } else {
+                if (chartCanvas && chartContainer && !chartContainer.contains(chartCanvas)) {
+                    chartContainer.insertBefore(chartCanvas, chartContainer.firstChild);
+                    chartCanvas.style.display = 'block';
+                    chartWasRemoved = false;
+                }
+                if (chartCanvas) chartCanvas.style.display = 'block';
+                if (summaryCards) summaryCards.style.display = 'none';
+                if (converterWrapper) converterWrapper.style.display = 'none';
+                if (calculatorContent) calculatorContent.style.display = 'none';
+            }
+        });
+    });
+    // On page load, ensure chart is hidden if calculator tab is active
+    document.addEventListener('DOMContentLoaded', function() {
+        const activeTab = document.querySelector('.tab-button.active');
+        if (activeTab && activeTab.getAttribute('data-timeframe') === 'calculator') {
+            if (chartCanvas) chartCanvas.style.display = 'none';
+        }
+    });
+})();
 
 // Initialize the calculator when DOM is loaded
 document.addEventListener('DOMContentLoaded', function() {
