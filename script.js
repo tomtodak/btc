@@ -478,6 +478,7 @@ class MultiTimeframeBTCCalculator {
             const levels = data.levels;
             let srSuggestion = '-', vtSuggestion = '-', taSuggestion = '-';
             let taTarget = '';
+            let hvSuggestion = '-';
             let info = '';
             if (levels && data.high && data.low && data.close) {
                 const current = this.currentPrice;
@@ -533,18 +534,35 @@ class MultiTimeframeBTCCalculator {
                     taTarget = `<div class='next-target last-next-target'>Next Support: S1 $${levels.s1.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</div>`;
                 }
 
+                // HV suggestion (High Volume Signal)
+                // high = harga paling banyak dibeli, low = harga paling banyak dijual
+                // data.highVolumeBuy, data.highVolumeSell (andaian: high = buy, low = sell)
+                // Jika volume buy pada high > volume sell pada low → HV: BUY
+                // Jika volume sell pada low > volume buy pada high → HV: SELL
+                // Jika sama → HV: HOLD
+                let highVolumeBuy = data.volumeData?.[data.high]?.buy || 0;
+                let highVolumeSell = data.volumeData?.[data.low]?.sell || 0;
+                if (highVolumeBuy > highVolumeSell) {
+                    hvSuggestion = 'BUY';
+                } else if (highVolumeSell > highVolumeBuy) {
+                    hvSuggestion = 'SELL';
+                } else {
+                    hvSuggestion = 'HOLD';
+                }
+
                 info = `
                     ${taTarget}
                     <div><b>SR</b>: ${srSuggestion}</div>
                     <div><b>VT</b>: ${vtSuggestion}</div>
-                    <div style="margin-top:8px;">Current Price: <b>$${current.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</b></div>
+                    <div><b>HV</b>: ${hvSuggestion}</div>
+                    <div style=\"margin-top:8px;\">Current Price: <b>$${current.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</b></div>
                     <div>Most Bought: <b>$${data.high.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</b></div>
                     <div>Most Sold: <b>$${data.low.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</b></div>
                 `;
             }
             // Papar TA sahaja di bold putih
             document.getElementById(`summary-${tf}-suggestion`).textContent = taSuggestion;
-            // Papar next target/support TA di bawah, kemudian SR & VT, kemudian info harga
+            // Papar next target/support TA di bawah, kemudian SR & VT & HV, kemudian info harga
             document.getElementById(`summary-${tf}-info`).innerHTML = info;
         });
     }
