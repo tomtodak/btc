@@ -311,7 +311,7 @@ body {
 .comparison-table th,
 .comparison-table td {
     padding: 10px;
-    text-align: center;
+    text-align: center !important;
     border-bottom: 1px solid rgba(255,255,255,0.2);
 }
 
@@ -319,10 +319,12 @@ body {
     background: rgba(255,255,255,0.05);
     font-weight: bold;
     color: #feca57;
+    text-align: center !important;
 }
 
 .comparison-table td {
     color: #f3f3f3;
+    text-align: center !important;
 }
 
 .period-info {
@@ -400,46 +402,56 @@ body {
 }
 
 .level-card.pivot {
-    min-width: 120px;
-    max-width: 140px;
+    min-width: 220px;
+    max-width: 260px;
     margin: 0 auto;
     background: #222;
     border: 2px solid #ffe066;
     color: #ffe066;
     font-weight: bold;
     box-shadow: 0 0 8px #ffe06644;
-    padding: 12px 10px;
-    min-height: 60px;
-    max-height: 70px;
+    padding: 20px 18px 20px 18px;
+    min-height: 90px;
+    max-height: 110px;
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
+    gap: 8px;
 }
 
 .level-card.pivot .level-title {
-    font-size: 0.95em;
-    margin-bottom: 2px;
+    font-size: 1.08em;
+    margin-bottom: 0;
     letter-spacing: 0.5px;
+    font-weight: 700;
+    text-align: center;
 }
 
 .level-card.pivot .price-value {
-    font-size: 1.25em;
+    font-size: 1.45em;
     font-weight: bold;
-    margin-top: 2px;
+    margin-top: 0;
+    letter-spacing: 1px;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 @media (max-width: 900px) {
-    .level-row {
-        flex-wrap: wrap;
-        gap: 8px;
-    }
-    .levels-grid-new {
-        gap: 6px;
-    }
     .level-card.pivot {
-        min-width: 90px;
-        max-width: 100px;
+        min-width: 150px;
+        max-width: 180px;
+        min-height: 70px;
+        max-height: 80px;
+        padding: 12px 6px;
+    }
+    .level-card.pivot .level-title {
+        font-size: 0.95em;
+    }
+    .level-card.pivot .price-value {
+        font-size: 1.1em;
     }
 }
 
@@ -581,4 +593,313 @@ body {
 }
 .next-target.last-next-target {
     margin-bottom: 14px;
+} 
+
+/* Converter Styles - Updated for wider layout */
+.converter-main {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 40px 20px;
+}
+
+.converter-header {
+    text-align: center;
+    margin-bottom: 40px;
+}
+
+.converter-header h2 {
+    font-size: 2.5rem;
+    color: #ffe066;
+    margin-bottom: 8px;
+    font-weight: 700;
+}
+
+.converter-subtitle {
+    font-size: 1.1rem;
+    color: #ccc;
+    opacity: 0.8;
+}
+
+.converter-input-section {
+    margin-bottom: 40px;
+    display: flex;
+    justify-content: center;
+}
+
+.btc-input-wrapper {
+    text-align: center;
+}
+
+.btc-input-wrapper label {
+    display: block;
+    font-size: 1.2rem;
+    color: #ffe066;
+    margin-bottom: 12px;
+    font-weight: 600;
+}
+
+.btc-input-group {
+    position: relative;
+    display: inline-block;
+}
+
+.btc-main-input {
+    font-size: 2rem;
+    padding: 20px 60px 20px 20px;
+    border: 3px solid #ffe066;
+    border-radius: 15px;
+    background: rgba(255, 224, 102, 0.1);
+    color: #ffe066;
+    text-align: center;
+    width: 300px;
+    font-weight: bold;
+    transition: all 0.3s ease;
+}
+
+.btc-main-input:focus {
+    outline: none;
+    border-color: #ffb300;
+    box-shadow: 0 0 20px rgba(255, 224, 102, 0.3);
+    background: rgba(255, 224, 102, 0.15);
+}
+
+.btc-symbol {
+    position: absolute;
+    right: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 1.5rem;
+    color: #ffe066;
+    font-weight: bold;
+}
+
+.conversion-cards {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    grid-template-rows: repeat(2, 1fr);
+    gap: 25px;
+    margin-bottom: 30px;
+    max-width: 800px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.conversion-card {
+    background: linear-gradient(135deg, #23272f 0%, #1a1d23 100%);
+    border: 2px solid transparent;
+    border-radius: 15px;
+    padding: 35px 25px;
+    text-align: center;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+    min-height: 200px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.conversion-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.conversion-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+}
+
+.conversion-card:hover::before {
+    opacity: 1;
+}
+
+.usd-card {
+    border-color: #4ecdc4;
+    box-shadow: 0 0 15px rgba(78, 205, 196, 0.2);
+}
+
+.myr-card {
+    border-color: #ff6b6b;
+    box-shadow: 0 0 15px rgba(255, 107, 107, 0.2);
+}
+
+.cny-card {
+    border-color: #ffe066;
+    box-shadow: 0 0 15px rgba(255, 224, 102, 0.2);
+}
+
+.idr-card {
+    border-color: #a8e6cf;
+    box-shadow: 0 0 15px rgba(168, 230, 207, 0.2);
+}
+
+.card-icon {
+    font-size: 2.5rem;
+    margin-bottom: 15px;
+    display: block;
+}
+
+.card-content {
+    position: relative;
+    z-index: 1;
+}
+
+.card-label {
+    font-size: 0.9rem;
+    color: #ccc;
+    margin-bottom: 8px;
+    font-weight: 500;
+}
+
+.card-value {
+    font-size: 2rem;
+    font-weight: bold;
+    color: #fff;
+    margin-bottom: 5px;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    line-height: 1.2;
+    word-wrap: break-word;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.card-symbol {
+    font-size: 0.8rem;
+    color: #ffe066;
+    font-weight: 600;
+    opacity: 0.8;
+}
+
+.converter-rate-info {
+    text-align: center;
+    font-size: 1rem;
+    color: #ccc;
+    padding: 15px;
+    background: rgba(255,255,255,0.05);
+    border-radius: 10px;
+    border: 1px solid rgba(255,255,255,0.1);
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.converter-rate-info b {
+    color: #ffe066;
+}
+
+@media (max-width: 1200px) {
+    .conversion-cards {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 20px;
+        max-width: 600px;
+    }
+}
+
+@media (max-width: 768px) {
+    .conversion-cards {
+        grid-template-columns: 1fr;
+        max-width: 350px;
+        gap: 15px;
+    }
+    
+    .btc-main-input {
+        width: 250px;
+        font-size: 1.5rem;
+        padding: 15px 50px 15px 15px;
+    }
+    
+    .converter-header h2 {
+        font-size: 2rem;
+    }
+    
+    .conversion-card {
+        min-height: 150px;
+        padding: 25px 15px;
+    }
+    
+    .card-value {
+        font-size: 1.6rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .btc-main-input {
+        width: 200px;
+        font-size: 1.3rem;
+    }
+    
+    .card-value {
+        font-size: 1.4rem;
+    }
+} 
+
+/* Currency Toggle Button */
+.currency-toggle {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    display: flex;
+    gap: 8px;
+    z-index: 1000;
+}
+
+.currency-btn {
+    background: rgba(255,255,255,0.1);
+    border: 2px solid rgba(255,255,255,0.2);
+    border-radius: 25px;
+    padding: 8px 16px;
+    color: #ccc;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(10px);
+    font-size: 14px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.currency-btn:hover {
+    background: rgba(255,224,102,0.2);
+    border-color: #ffe066;
+    color: #ffe066;
+    transform: translateY(-1px);
+}
+
+.currency-btn.active {
+    background: #ffe066;
+    border-color: #ffe066;
+    color: #000;
+    box-shadow: 0 2px 8px rgba(255,224,102,0.3);
+}
+
+.currency-icon {
+    font-size: 16px;
+}
+
+.currency-text {
+    font-weight: 700;
+}
+
+@media (max-width: 768px) {
+    .currency-toggle {
+        top: 15px;
+        right: 15px;
+    }
+    
+    .currency-btn {
+        padding: 6px 12px;
+        font-size: 12px;
+    }
+    
+    .currency-icon {
+        font-size: 14px;
+    }
 } 

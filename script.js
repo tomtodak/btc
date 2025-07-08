@@ -201,7 +201,7 @@ class MultiTimeframeBTCCalculator {
     
     updateAllDisplays() {
         // Update current price
-        document.getElementById('currentPrice').textContent = `$${this.currentPrice.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}`;
+        document.getElementById('currentPrice').textContent = window.formatPrice ? window.formatPrice(this.currentPrice) : `$${this.currentPrice.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}`;
         
         // Update all timeframes
         Object.keys(this.timeframes).forEach(timeframe => {
@@ -228,23 +228,23 @@ class MultiTimeframeBTCCalculator {
         Object.keys(levels).forEach(level => {
             const element = document.getElementById(`${timeframe}-${level}`);
             if (element) {
-                element.textContent = `$${levels[level].toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}`;
+                element.textContent = window.formatPrice ? window.formatPrice(levels[level]) : `$${levels[level].toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}`;
             }
         });
 
         // Update pivot card with current price instead of pivot
         const pivotElement = document.getElementById(`${timeframe}-pivot`);
         if (pivotElement) {
-            pivotElement.textContent = `$${this.currentPrice.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}`;
+            pivotElement.textContent = window.formatPrice ? window.formatPrice(this.currentPrice) : `$${this.currentPrice.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}`;
         }
 
         // Update High, Low, Close
         const highEl = document.getElementById(`${timeframe}-high`);
         const lowEl = document.getElementById(`${timeframe}-low`);
         const closeEl = document.getElementById(`${timeframe}-close`);
-        if (highEl) highEl.textContent = data.high ? `$${data.high.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}` : '-';
-        if (lowEl) lowEl.textContent = data.low ? `$${data.low.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}` : '-';
-        if (closeEl) closeEl.textContent = data.close ? `$${data.close.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}` : '-';
+        if (highEl) highEl.textContent = data.high ? (window.formatPrice ? window.formatPrice(data.high) : `$${data.high.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}`) : '-';
+        if (lowEl) lowEl.textContent = data.low ? (window.formatPrice ? window.formatPrice(data.low) : `$${data.low.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}`) : '-';
+        if (closeEl) closeEl.textContent = data.close ? (window.formatPrice ? window.formatPrice(data.close) : `$${data.close.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}`) : '-';
 
         // Update suggestion
         this.updateSuggestion(timeframe);
@@ -287,10 +287,10 @@ class MultiTimeframeBTCCalculator {
         
         dataInfo.innerHTML = `
             <div><strong>Period:</strong> ${startStr} - ${endStr}</div>
-            <div><strong>High (Most Bought):</strong> $${data.high.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</div>
-            <div><strong>Low (Most Sold):</strong> $${data.low.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</div>
-            <div><strong>Close (Current):</strong> $${data.close.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</div>
-            <div><strong>Pivot:</strong> $${data.levels?.pivot?.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) || 'Calculating...'}</div>
+            <div><strong>High (Most Bought):</strong> ${window.formatPrice ? window.formatPrice(data.high) : `$${data.high.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}`}</div>
+            <div><strong>Low (Most Sold):</strong> ${window.formatPrice ? window.formatPrice(data.low) : `$${data.low.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}`}</div>
+            <div><strong>Close (Current):</strong> ${window.formatPrice ? window.formatPrice(data.close) : `$${data.close.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}`}</div>
+            <div><strong>Pivot:</strong> ${window.formatPrice ? window.formatPrice(data.levels?.pivot) : `$${data.levels?.pivot?.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}` || 'Calculating...'}</div>
         `;
     }
     
@@ -330,9 +330,9 @@ class MultiTimeframeBTCCalculator {
         levels.forEach(level => {
             tableHTML += '<tr>';
             tableHTML += `<td><strong>${level.toUpperCase()}</strong></td>`;
-            tableHTML += `<td>$${this.timeframes.daily.levels[level]?.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) || '-'}</td>`;
-            tableHTML += `<td>$${this.timeframes.weekly.levels[level]?.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) || '-'}</td>`;
-            tableHTML += `<td>$${this.timeframes.monthly.levels[level]?.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) || '-'}</td>`;
+            tableHTML += `<td>${window.formatPrice ? window.formatPrice(this.timeframes.daily.levels[level]) : `$${this.timeframes.daily.levels[level]?.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}` || '-'}</td>`;
+            tableHTML += `<td>${window.formatPrice ? window.formatPrice(this.timeframes.weekly.levels[level]) : `$${this.timeframes.weekly.levels[level]?.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}` || '-'}</td>`;
+            tableHTML += `<td>${window.formatPrice ? window.formatPrice(this.timeframes.monthly.levels[level]) : `$${this.timeframes.monthly.levels[level]?.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}` || '-'}</td>`;
             tableHTML += '</tr>';
         });
         
@@ -509,37 +509,7 @@ class MultiTimeframeBTCCalculator {
                     }
                 }
 
-                // Gabungan TA
-                if (srSuggestion === vtSuggestion) {
-                    taSuggestion = srSuggestion;
-                } else if (vtSuggestion === 'BUY' && srSuggestion === 'BUY') {
-                    taSuggestion = 'STRONG BUY';
-                } else if (vtSuggestion === 'SELL' && srSuggestion === 'SELL') {
-                    taSuggestion = 'STRONG SELL';
-                } else if (srSuggestion === 'HOLD' || vtSuggestion === 'HOLD') {
-                    taSuggestion = 'HOLD';
-                } else {
-                    taSuggestion = 'CAUTION';
-                }
-
-                // Next target/support untuk TA
-                if (taSuggestion === 'HOLD' || taSuggestion === 'CAUTION') {
-                    taTarget = `
-                        <div class='next-target' style='margin-bottom:0;'>Next Target: R1 $${levels.r1.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</div>
-                        <div class='next-target last-next-target'>Next Support: S1 $${levels.s1.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</div>
-                    `;
-                } else if (taSuggestion.includes('BUY')) {
-                    taTarget = `<div class='next-target last-next-target'>Next Target: R1 $${levels.r1.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</div>`;
-                } else if (taSuggestion.includes('SELL') || taSuggestion === 'LOCK PROFIT') {
-                    taTarget = `<div class='next-target last-next-target'>Next Support: S1 $${levels.s1.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</div>`;
-                }
-
                 // HV suggestion (High Volume Signal)
-                // high = harga paling banyak dibeli, low = harga paling banyak dijual
-                // data.highVolumeBuy, data.highVolumeSell (andaian: high = buy, low = sell)
-                // Jika volume buy pada high > volume sell pada low → HV: BUY
-                // Jika volume sell pada low > volume buy pada high → HV: SELL
-                // Jika sama → HV: HOLD
                 let highVolumeBuy = data.volumeData?.[data.high]?.buy || 0;
                 let highVolumeSell = data.volumeData?.[data.low]?.sell || 0;
                 if (highVolumeBuy > highVolumeSell) {
@@ -550,14 +520,34 @@ class MultiTimeframeBTCCalculator {
                     hvSuggestion = 'HOLD';
                 }
 
+                // Combine TA logic
+                const signals = [srSuggestion, vtSuggestion, hvSuggestion];
+                const buyCount = signals.filter(s => s.includes('BUY')).length;
+                const sellCount = signals.filter(s => s.includes('SELL')).length;
+                if (buyCount >= 2) taSuggestion = 'BUY';
+                else if (sellCount >= 2) taSuggestion = 'SELL';
+                else taSuggestion = 'HOLD';
+
+                // Next target/support untuk TA (guna formatPrice)
+                if (taSuggestion === 'HOLD' || taSuggestion === 'CAUTION') {
+                    taTarget = `
+                        <div class='next-target' style='margin-bottom:0;'>Next Target: R1 <b>${window.formatPrice ? window.formatPrice(levels.r1) : levels.r1}</b></div>
+                        <div class='next-target last-next-target'>Next Support: S1 <b>${window.formatPrice ? window.formatPrice(levels.s1) : levels.s1}</b></div>
+                    `;
+                } else if (taSuggestion.includes('BUY')) {
+                    taTarget = `<div class='next-target last-next-target'>Next Target: R1 <b>${window.formatPrice ? window.formatPrice(levels.r1) : levels.r1}</b></div>`;
+                } else if (taSuggestion.includes('SELL') || taSuggestion === 'LOCK PROFIT') {
+                    taTarget = `<div class='next-target last-next-target'>Next Support: S1 <b>${window.formatPrice ? window.formatPrice(levels.s1) : levels.s1}</b></div>`;
+                }
+
                 info = `
                     ${taTarget}
                     <div><b>SR</b>: ${srSuggestion}</div>
                     <div><b>VT</b>: ${vtSuggestion}</div>
                     <div><b>HV</b>: ${hvSuggestion}</div>
-                    <div style=\"margin-top:8px;\">Current Price: <b>$${current.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</b></div>
-                    <div>Most Bought: <b>$${data.high.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</b></div>
-                    <div>Most Sold: <b>$${data.low.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</b></div>
+                    <div style="margin-top:8px;">Current Price: <b>${window.formatPrice ? window.formatPrice(current) : current}</b></div>
+                    <div>Most Bought: <b>${window.formatPrice ? window.formatPrice(data.high) : data.high}</b></div>
+                    <div>Most Sold: <b>${window.formatPrice ? window.formatPrice(data.low) : data.low}</b></div>
                 `;
             }
             // Papar TA sahaja di bold putih
@@ -573,6 +563,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const tabButtons = document.querySelectorAll('.tab-button');
     const chartCanvas = document.getElementById('btcChart');
     const summaryCards = document.getElementById('summary-cards-wrapper');
+    const converterWrapper = document.getElementById('converter-wrapper');
     
     tabButtons.forEach(button => {
         button.addEventListener('click', function() {
@@ -584,13 +575,19 @@ document.addEventListener('DOMContentLoaded', function() {
             this.classList.add('active');
             const contentDiv = document.getElementById(timeframe + '-content');
             if (contentDiv) contentDiv.classList.add('active');
-            // Show/hide chart or summary
+            // Show/hide chart, summary, converter
             if (timeframe === 'summary') {
                 if (chartCanvas) chartCanvas.style.display = 'none';
                 if (summaryCards) summaryCards.style.display = 'block';
+                if (converterWrapper) converterWrapper.style.display = 'none';
+            } else if (timeframe === 'converter') {
+                if (chartCanvas) chartCanvas.style.display = 'none';
+                if (summaryCards) summaryCards.style.display = 'none';
+                if (converterWrapper) converterWrapper.style.display = 'block';
             } else {
                 if (chartCanvas) chartCanvas.style.display = 'block';
                 if (summaryCards) summaryCards.style.display = 'none';
+                if (converterWrapper) converterWrapper.style.display = 'none';
             }
             // Update current timeframe in calculator
             if (window.calculator) {
@@ -598,6 +595,8 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             // Update chart with new timeframe
             updateChartWithTimeframe(timeframe);
+            // Update currency displays for the new tab
+            updateAllCurrencyDisplays();
         });
     });
 });
@@ -653,7 +652,274 @@ function getDataSummary() {
     }
 }
 
+// ===== Converter Tab Logic =====
+let converterRates = {
+    USD: 1,
+    MYR: null,
+    CNY: null,
+    IDR: null
+};
+
+async function fetchConverterRates() {
+    try {
+        console.log('Fetching exchange rates...');
+        const res = await fetch('https://api.exchangerate.host/latest?base=USD&symbols=MYR,CNY,IDR');
+        
+        if (!res.ok) {
+            throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+        }
+        
+        const data = await res.json();
+        console.log('Exchange rates response:', data);
+        
+        if (data.success === false) {
+            throw new Error(data.error?.info || 'API returned error');
+        }
+        
+        converterRates.MYR = data.rates.MYR;
+        converterRates.CNY = data.rates.CNY;
+        converterRates.IDR = data.rates.IDR;
+        
+        console.log('Rates loaded:', converterRates);
+        updateConverterRateInfo();
+        
+    } catch (error) {
+        console.error('Exchange rate fetch error:', error);
+        
+        // Use fallback rates
+        converterRates.MYR = 4.25;
+        converterRates.CNY = 7.20;
+        converterRates.IDR = 15800;
+        
+        document.getElementById('converter-rate-info').innerHTML = 
+            'Using fallback rates (live rates unavailable)<br>' +
+            '<small>1 USD = 4.25 MYR | 7.20 CNY | 15,800 IDR</small>';
+    }
+}
+
+function updateConverterRateInfo() {
+    const info = document.getElementById('converter-rate-info');
+    info.innerHTML =
+        `1 USD = <b>${converterRates.MYR?.toLocaleString(undefined, {maximumFractionDigits:4}) || '-'}</b> MYR | ` +
+        `<b>${converterRates.CNY?.toLocaleString(undefined, {maximumFractionDigits:4}) || '-'}</b> CNY | ` +
+        `<b>${converterRates.IDR?.toLocaleString(undefined, {maximumFractionDigits:2}) || '-'}</b> IDR`;
+}
+
+function formatConv(val, decimals=8) {
+    if (!val && val !== 0) return '';
+    if (Math.abs(val) >= 1) return val.toLocaleString(undefined, {maximumFractionDigits:2});
+    return val.toFixed(decimals).replace(/\.0+$/, '');
+}
+
+// Update converter logic untuk single input
+function setupConverterEvents() {
+    const btcInput = document.getElementById('conv-btc-main');
+    
+    btcInput.addEventListener('input', function() {
+        const btcAmount = parseFloat(this.value) || 0;
+        const currentPrice = window.calculator?.currentPrice || 0;
+        
+        if (!converterRates.MYR || !converterRates.CNY || !converterRates.IDR) return;
+        
+        const usdValue = btcAmount * currentPrice;
+        const myrValue = usdValue * converterRates.MYR;
+        const cnyValue = usdValue * converterRates.CNY;
+        const idrValue = usdValue * converterRates.IDR;
+        
+        // Update cards
+        document.getElementById('conv-usd-main').textContent = `$${formatConv(usdValue, 2)}`;
+        document.getElementById('conv-myr-main').textContent = `RM ${formatConv(myrValue, 2)}`;
+        document.getElementById('conv-cny-main').textContent = `¥${formatConv(cnyValue, 2)}`;
+        document.getElementById('conv-idr-main').textContent = `Rp ${formatConv(idrValue, 0)}`;
+    });
+}
+
+// ===== Currency System =====
+let currentCurrency = 'USD';
+let currencyRates = {
+    USD: 1,
+    MYR: null
+};
+
+// Make currency variables globally accessible for chart
+window.currentCurrency = currentCurrency;
+window.currencyRates = currencyRates;
+
+async function fetchCurrencyRates() {
+    try {
+        const res = await fetch('https://api.exchangerate.host/latest?base=USD&symbols=MYR');
+        const data = await res.json();
+        currencyRates.MYR = data.rates.MYR;
+        // Update global currency rates for chart
+        window.currencyRates = currencyRates;
+        console.log('Currency rates loaded:', currencyRates);
+    } catch (error) {
+        console.error('Failed to fetch currency rates:', error);
+        // Fallback rates
+        currencyRates.MYR = 4.25;
+        // Update global currency rates for chart
+        window.currencyRates = currencyRates;
+    }
+}
+
+function formatPrice(price, currency = currentCurrency) {
+    if (!price) return '-';
+    
+    let formattedPrice;
+    if (currency === 'USD') {
+        formattedPrice = `$${price.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}`;
+    } else if (currency === 'MYR') {
+        const myrPrice = price * currencyRates.MYR;
+        formattedPrice = `RM ${myrPrice.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}`;
+    }
+    
+    return formattedPrice;
+}
+
+// Make formatPrice globally accessible
+window.formatPrice = formatPrice;
+
+function updateAllCurrencyDisplays() {
+    // Update current price display
+    const currentPriceEl = document.getElementById('currentPrice');
+    if (currentPriceEl && window.calculator) {
+        currentPriceEl.textContent = formatPrice(window.calculator.currentPrice);
+    }
+    
+    // Update all S/R levels for all timeframes
+    ['daily', 'weekly', 'monthly'].forEach(timeframe => {
+        const levels = window.calculator?.timeframes[timeframe]?.levels;
+        if (levels) {
+            ['r4', 'r3', 'r2', 'r1', 's1', 's2', 's3', 's4'].forEach(level => {
+                const element = document.getElementById(`${timeframe}-${level}`);
+                if (element && levels[level]) {
+                    element.textContent = formatPrice(levels[level]);
+                }
+            });
+            
+            // Update pivot (current price)
+            const pivotElement = document.getElementById(`${timeframe}-pivot`);
+            if (pivotElement && window.calculator) {
+                pivotElement.textContent = formatPrice(window.calculator.currentPrice);
+            }
+        }
+        
+        // Update high, low, close
+        const data = window.calculator?.timeframes[timeframe];
+        if (data) {
+            const highEl = document.getElementById(`${timeframe}-high`);
+            const lowEl = document.getElementById(`${timeframe}-low`);
+            const closeEl = document.getElementById(`${timeframe}-close`);
+            
+            if (highEl && data.high) highEl.textContent = formatPrice(data.high);
+            if (lowEl && data.low) lowEl.textContent = formatPrice(data.low);
+            if (closeEl && data.close) closeEl.textContent = formatPrice(data.close);
+        }
+    });
+    
+    // Update comparison table
+    updateComparisonTableCurrency();
+    
+    // Update summary tab
+    updateSummaryTabCurrency();
+    
+    // Update chart if it exists and is visible
+    if (window.btcChart && window.calculator) {
+        const currentTimeframe = window.calculator.currentTimeframe;
+        if (currentTimeframe && currentTimeframe !== 'summary' && currentTimeframe !== 'converter') {
+            // Redraw chart with updated currency
+            window.btcChart.draw();
+        }
+    }
+}
+
+function updateComparisonTableCurrency() {
+    const tableBody = document.getElementById('comparisonTable');
+    if (!tableBody) return;
+    
+    const levels = ['r4', 'r3', 'r2', 'r1', 'pivot', 's1', 's2', 's3', 's4'];
+    
+    let tableHTML = '';
+    levels.forEach(level => {
+        tableHTML += '<tr>';
+        tableHTML += `<td><strong>${level.toUpperCase()}</strong></td>`;
+        tableHTML += `<td>${formatPrice(window.calculator?.timeframes.daily.levels[level]) || '-'}</td>`;
+        tableHTML += `<td>${formatPrice(window.calculator?.timeframes.weekly.levels[level]) || '-'}</td>`;
+        tableHTML += `<td>${formatPrice(window.calculator?.timeframes.monthly.levels[level]) || '-'}</td>`;
+        tableHTML += '</tr>';
+    });
+    
+    tableBody.innerHTML = tableHTML;
+}
+
+function updateSummaryTabCurrency() {}
+
+// Currency toggle event listeners
+function setupCurrencyToggle() {
+    const currencyButtons = document.querySelectorAll('.currency-btn');
+    console.log('Found currency buttons:', currencyButtons.length);
+    
+    if (currencyButtons.length === 0) {
+        console.error('No currency buttons found!');
+        return;
+    }
+    
+    currencyButtons.forEach((button, index) => {
+        console.log(`Button ${index}:`, button.getAttribute('data-currency'));
+        button.addEventListener('click', function() {
+            const newCurrency = this.getAttribute('data-currency');
+            console.log('Currency button clicked:', newCurrency);
+            
+            // Remove active class from all currency buttons
+            currencyButtons.forEach(btn => btn.classList.remove('active'));
+            
+            // Add active class to clicked button
+            this.classList.add('active');
+            
+            // Update currency if different
+            if (newCurrency !== currentCurrency) {
+                console.log('Changing currency from', currentCurrency, 'to', newCurrency);
+                currentCurrency = newCurrency;
+                
+                // Update global currency variables for chart
+                window.currentCurrency = currentCurrency;
+                window.currencyRates = currencyRates;
+                
+                // Update global formatPrice function
+                window.formatPrice = formatPrice;
+                
+                // Update all displays with new currency
+                updateAllCurrencyDisplays();
+                updateConverterRateInfo();
+                
+                console.log('Currency updated and displays refreshed');
+            }
+        });
+    });
+}
+
+// Setup currency toggle when DOM is loaded
+document.addEventListener('DOMContentLoaded', setupCurrencyToggle);
+
+// Function to update currency button states (using same approach as tab buttons)
+function updateCurrencyButtonStates() {
+    const currencyButtons = document.querySelectorAll('.currency-btn');
+    currencyButtons.forEach(button => {
+        const buttonCurrency = button.getAttribute('data-currency');
+        if (buttonCurrency === currentCurrency) {
+            button.classList.add('active');
+        } else {
+            button.classList.remove('active');
+        }
+    });
+}
+
 // Initialize the calculator when DOM is loaded
 document.addEventListener('DOMContentLoaded', function() {
     window.calculator = new MultiTimeframeBTCCalculator();
+    fetchConverterRates();
+    setupConverterEvents();
+    fetchCurrencyRates(); // Fetch currency rates on load
+    updateAllCurrencyDisplays(); // Update displays with initial currency
+    updateCurrencyButtonStates(); // Update currency button states
 }); 

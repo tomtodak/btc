@@ -9,9 +9,27 @@
 </head>
 <body>
     <div class="container">
-        <div class="header">
-            <h1>🚀 BTC Support & Resistance Calculator</h1>
-            <p>Multi-Timeframe Analysis (Daily, Weekly, Monthly)</p>
+        <!-- Currency Toggle Button -->
+        <div class="currency-toggle">
+            <button class="currency-btn active" data-currency="USD">
+                <span class="currency-icon">💵</span>
+                <span class="currency-text">USD</span>
+            </button>
+            <button class="currency-btn" data-currency="MYR">
+                <span class="currency-icon">🇲🇾</span>
+                <span class="currency-text">MYR</span>
+            </button>
+        </div>
+        
+        <div class="header" style="text-align:center;">
+            <div class="btc-logo" style="display: flex; justify-content: center; align-items: center; margin-bottom: 8px;">
+                <svg width="100" height="100" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" style="display: block; filter: drop-shadow(0 0 8px #f7931a);">
+                  <circle cx="50" cy="50" r="48" fill="#fff" stroke="#f7931a" stroke-width="4"/>
+                  <text x="50%" y="54%" text-anchor="middle" fill="#f7931a" font-size="54" font-family="Arial, Helvetica, sans-serif" font-weight="bold" dy=".3em">₿</text>
+                </svg>
+            </div>
+            <h1 style="margin: 0;">BTC Analytical Analysis</h1>
+            <p style="margin-top: 8px;">Multi-Timeframe Analysis (Daily, Weekly, Monthly) by tOm</p>
         </div>
         
         <div class="price-display">
@@ -40,6 +58,66 @@
                     </div>
                 </div>
             </div>
+            
+            <!-- Converter Wrapper -->
+            <div id="converter-wrapper" style="display:none;">
+                <div class="converter-main">
+                    <div class="converter-header">
+                        <h2>💱 BTC Currency Converter</h2>
+                        <p class="converter-subtitle">Convert Bitcoin to multiple currencies instantly</p>
+                    </div>
+                    
+                    <div class="converter-input-section">
+                        <div class="btc-input-wrapper">
+                            <label for="conv-btc-main">Enter BTC Amount:</label>
+                            <div class="btc-input-group">
+                                <input type="number" id="conv-btc-main" step="any" min="0" placeholder="0.00" class="btc-main-input">
+                                <span class="btc-symbol">₿</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="conversion-cards">
+                        <div class="conversion-card usd-card">
+                            <div class="card-icon">💵</div>
+                            <div class="card-content">
+                                <div class="card-label">US Dollar</div>
+                                <div class="card-value" id="conv-usd-main">$0.00</div>
+                                <div class="card-symbol">USD</div>
+                            </div>
+                        </div>
+                        
+                        <div class="conversion-card myr-card">
+                            <div class="card-icon">🇲🇾</div>
+                            <div class="card-content">
+                                <div class="card-label">Malaysian Ringgit</div>
+                                <div class="card-value" id="conv-myr-main">RM 0.00</div>
+                                <div class="card-symbol">MYR</div>
+                            </div>
+                        </div>
+                        
+                        <div class="conversion-card cny-card">
+                            <div class="card-icon">🇨🇳</div>
+                            <div class="card-content">
+                                <div class="card-label">Chinese Yuan</div>
+                                <div class="card-value" id="conv-cny-main">¥0.00</div>
+                                <div class="card-symbol">CNY</div>
+                            </div>
+                        </div>
+                        
+                        <div class="conversion-card idr-card">
+                            <div class="card-icon">🇮🇩</div>
+                            <div class="card-content">
+                                <div class="card-label">Indonesian Rupiah</div>
+                                <div class="card-value" id="conv-idr-main">Rp 0</div>
+                                <div class="card-symbol">IDR</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="converter-rate-info" id="converter-rate-info"></div>
+                </div>
+            </div>
         </div>
         
         <div class="main-content">
@@ -49,6 +127,7 @@
                     <button class="tab-button" data-timeframe="weekly">Weekly</button>
                     <button class="tab-button" data-timeframe="monthly">Monthly</button>
                     <button class="tab-button" data-timeframe="summary">Summary</button>
+                    <button class="tab-button" data-timeframe="converter">Converter</button>
                 </div>
                 
                 <!-- Daily Content -->
@@ -158,31 +237,31 @@
                     </div>
                     <div class="suggestion-box" id="monthly-suggestion">-</div>
                 </div>
+                </div>
             </div>
         </div>
-    </div>
-
-    <!-- Data Management Buttons -->
-    <div class="data-controls">
-        <button class="control-btn" onclick="exportData()">📊 Export Data</button>
-    </div>
-    
-    <!-- Comparison Table -->
-    <div class="comparison-table">
-        <h3>📊 Comparison Table</h3>
-        <table>
-            <thead>
-                <tr>
-                    <th>Level</th>
-                    <th>Daily</th>
-                    <th>Weekly</th>
-                    <th>Monthly</th>
-                </tr>
-            </thead>
-            <tbody id="comparisonTable">
-                <tr><td colspan="4">Loading...</td></tr>
-            </tbody>
-        </table>
+        
+        <!-- Data Management Buttons -->
+        <div class="data-controls">
+            <button class="control-btn" onclick="exportData()">📊 Export Data</button>
+        </div>
+        
+        <!-- Comparison Table -->
+        <div class="comparison-table">
+            <h3>📊 Comparison Table</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Level</th>
+                        <th>Daily</th>
+                        <th>Weekly</th>
+                        <th>Monthly</th>
+                    </tr>
+                </thead>
+                <tbody id="comparisonTable">
+                    <tr><td colspan="4">Loading...</td></tr>
+                </tbody>
+            </table>
     </div>
 
     <script src="script.js"></script>

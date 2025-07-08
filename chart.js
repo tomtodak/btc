@@ -125,7 +125,15 @@ class BTCCandlestickChart {
         ];
         let minPrice = Math.min(...allLevels);
         let maxPrice = Math.max(...allLevels);
-        const priceRange = maxPrice - minPrice;
+        let priceRange = maxPrice - minPrice;
+        // Tambah minimum price range
+        const minRange = this.currentPrice * 0.02;
+        if (priceRange < minRange) {
+            const center = (maxPrice + minPrice) / 2;
+            minPrice = center - minRange / 2;
+            maxPrice = center + minRange / 2;
+            priceRange = maxPrice - minPrice;
+        }
         minPrice -= priceRange * 0.05;
         maxPrice += priceRange * 0.05;
         const totalCandleWidth = this.candleWidth + this.candleSpacing;
@@ -163,7 +171,14 @@ class BTCCandlestickChart {
         ];
         let minPrice = Math.min(...allLevels);
         let maxPrice = Math.max(...allLevels);
-        const priceRange = maxPrice - minPrice;
+        let priceRange = maxPrice - minPrice;
+        const minRange = this.currentPrice * 0.02;
+        if (priceRange < minRange) {
+            const center = (maxPrice + minPrice) / 2;
+            minPrice = center - minRange / 2;
+            maxPrice = center + minRange / 2;
+            priceRange = maxPrice - minPrice;
+        }
         minPrice -= priceRange * 0.05;
         maxPrice += priceRange * 0.05;
         this.ctx.fillStyle = '#fff';
@@ -171,7 +186,8 @@ class BTCCandlestickChart {
         for (let i = 0; i <= this.yTicks; i++) {
             const price = maxPrice - (i * (maxPrice - minPrice) / this.yTicks);
             const y = this.padding + chartHeight - ((price - minPrice) / (maxPrice - minPrice) * chartHeight);
-            this.ctx.fillText(`$${price.toLocaleString(undefined, {maximumFractionDigits:0})}`, 2, y + 4);
+            const formattedPrice = this.formatChartPrice(price);
+            this.ctx.fillText(formattedPrice, 2, y + 4);
         }
     }
 
@@ -222,7 +238,14 @@ class BTCCandlestickChart {
         ];
         let minPrice = Math.min(...allLevels);
         let maxPrice = Math.max(...allLevels);
-        const priceRange = maxPrice - minPrice;
+        let priceRange = maxPrice - minPrice;
+        const minRange = this.currentPrice * 0.02;
+        if (priceRange < minRange) {
+            const center = (maxPrice + minPrice) / 2;
+            minPrice = center - minRange / 2;
+            maxPrice = center + minRange / 2;
+            priceRange = maxPrice - minPrice;
+        }
         minPrice -= priceRange * 0.05;
         maxPrice += priceRange * 0.05;
         
@@ -241,7 +264,8 @@ class BTCCandlestickChart {
                 this.ctx.setLineDash([]);
                 this.ctx.fillStyle = '#ff1744';
                 this.ctx.font = '12px Proxima Nova, Arial, sans-serif';
-                const label = `SL${idx + 1} $${val.toLocaleString(undefined, {maximumFractionDigits:0})}`;
+                const formattedPrice = this.formatChartPrice(val);
+                const label = `SL${idx + 1} ${formattedPrice}`;
                 this.ctx.fillText(label, this.canvas.width - this.padding - 100, y - 2);
             }
         });
@@ -261,7 +285,8 @@ class BTCCandlestickChart {
                 this.ctx.setLineDash([]);
                 this.ctx.fillStyle = '#00e676';
                 this.ctx.font = '12px Proxima Nova, Arial, sans-serif';
-                const label = `TR${idx + 1} $${val.toLocaleString(undefined, {maximumFractionDigits:0})}`;
+                const formattedPrice = this.formatChartPrice(val);
+                const label = `TR${idx + 1} ${formattedPrice}`;
                 this.ctx.fillText(label, this.canvas.width - this.padding - 100, y - 2);
             }
         });
@@ -279,7 +304,14 @@ class BTCCandlestickChart {
         ];
         let minPrice = Math.min(...allLevels);
         let maxPrice = Math.max(...allLevels);
-        const priceRange = maxPrice - minPrice;
+        let priceRange = maxPrice - minPrice;
+        const minRange = this.currentPrice * 0.02;
+        if (priceRange < minRange) {
+            const center = (maxPrice + minPrice) / 2;
+            minPrice = center - minRange / 2;
+            maxPrice = center + minRange / 2;
+            priceRange = maxPrice - minPrice;
+        }
         minPrice -= priceRange * 0.05;
         maxPrice += priceRange * 0.05;
         const y = this.padding + chartHeight - ((this.currentPrice - minPrice) / (maxPrice - minPrice) * chartHeight);
@@ -291,13 +323,32 @@ class BTCCandlestickChart {
         this.ctx.stroke();
         this.ctx.fillStyle = '#feca57';
         this.ctx.font = '14px Proxima Nova, Arial, sans-serif';
-        this.ctx.fillText(`$${this.currentPrice.toLocaleString(undefined, {maximumFractionDigits:2})}`, this.canvas.width - this.padding - 100, y - 8);
+        const formattedPrice = this.formatChartPrice(this.currentPrice);
+        this.ctx.fillText(formattedPrice, this.canvas.width - this.padding - 100, y - 8);
+    }
+
+    formatChartPrice(price) {
+        // Use the same currency system as the main app
+        if (typeof window !== 'undefined' && window.currentCurrency && window.currencyRates) {
+            const currency = window.currentCurrency;
+            const rates = window.currencyRates;
+            
+            if (currency === 'USD') {
+                return `$${price.toLocaleString(undefined, {maximumFractionDigits:0})}`;
+            } else if (currency === 'MYR') {
+                const myrPrice = price * rates.MYR;
+                return `RM ${myrPrice.toLocaleString(undefined, {maximumFractionDigits:0})}`;
+            }
+        }
+        // Fallback to USD
+        return `$${price.toLocaleString(undefined, {maximumFractionDigits:0})}`;
     }
 
     updatePriceDisplay() {
         const priceElement = document.getElementById('currentPrice');
         if (priceElement) {
-            priceElement.innerHTML = `<span style="color:#feca57;font-size:1.2em;font-weight:bold;">$${this.currentPrice.toLocaleString(undefined, {maximumFractionDigits:2})}</span>`;
+            const formattedPrice = this.formatChartPrice(this.currentPrice);
+            priceElement.innerHTML = `<span style="color:#feca57;font-size:1.2em;font-weight:bold;">${formattedPrice}</span>`;
         }
     }
 
