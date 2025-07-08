@@ -679,6 +679,7 @@ async function fetchConverterRates() {
         converterRates.MYR = data.rates.MYR;
         converterRates.CNY = data.rates.CNY;
         converterRates.IDR = data.rates.IDR;
+        window.converterRates = converterRates; // <-- ensure global
         
         console.log('Rates loaded:', converterRates);
         updateConverterRateInfo();
@@ -690,6 +691,7 @@ async function fetchConverterRates() {
         converterRates.MYR = 4.25;
         converterRates.CNY = 7.20;
         converterRates.IDR = 15800;
+        window.converterRates = converterRates; // <-- ensure global fallback
         
         document.getElementById('converter-rate-info').innerHTML = 
             'Using fallback rates (live rates unavailable)<br>' +
@@ -763,16 +765,25 @@ async function fetchCurrencyRates() {
 }
 
 function formatPrice(price, currency = currentCurrency) {
-    if (!price) return '-';
-    
+    if (!price && price !== 0) return '-';
     let formattedPrice;
     if (currency === 'USD') {
         formattedPrice = `$${price.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}`;
     } else if (currency === 'MYR') {
+        if (!currencyRates.MYR) return '-';
         const myrPrice = price * currencyRates.MYR;
         formattedPrice = `RM ${myrPrice.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}`;
+    } else if (currency === 'CNY') {
+        if (!window.converterRates || !window.converterRates.CNY) return '-';
+        const cnyPrice = price * window.converterRates.CNY;
+        formattedPrice = `¥${cnyPrice.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}`;
+    } else if (currency === 'IDR') {
+        if (!window.converterRates || !window.converterRates.IDR) return '-';
+        const idrPrice = price * window.converterRates.IDR;
+        formattedPrice = `Rp ${idrPrice.toLocaleString(undefined, {maximumFractionDigits:0})}`;
+    } else {
+        formattedPrice = price.toLocaleString(undefined, {maximumFractionDigits:2});
     }
-    
     return formattedPrice;
 }
 
@@ -912,6 +923,113 @@ function updateCurrencyButtonStates() {
             button.classList.remove('active');
         }
     });
+}
+
+// --- S/R Target Price in Converter Cards ---
+function renderSRTargetInConverter() {
+    // Use daily timeframe for S/R target (can be changed to weekly/monthly if needed)
+    const tf = 'daily';
+    const data = window.calculator?.timeframes?.[tf];
+    if (!data || !data.levels) return;
+    const levels = data.levels;
+    const current = window.calculator?.currentPrice || 0;
+    // Get BTC input value
+    const btcInput = document.getElementById('conv-btc-main');
+    const btcAmount = btcInput ? parseFloat(btcInput.value) || 0 : 0;
+    // Get S/R target info from TA logic (same as summary tab)
+    let srTargets = [];
+    // Next Target & Next Support logic (from summary)
+    let taSuggestion = '-';
+    if (current <= levels.s1 * 1.01) taSuggestion = 'BUY';
+    else if (current >= levels.r1 * 0.99) taSuggestion = 'SELL';
+    else taSuggestion = 'HOLD';
+    if (taSuggestion === 'HOLD' || taSuggestion === 'CAUTION') {
+        srTargets.push({ label: 'Potential Gain', value: levels.r1, multiply: true });
+        srTargets.push({ label: 'Potential Risk', value: levels.s1, multiply: true });
+    } else if (taSuggestion.includes('BUY')) {
+        srTargets.push({ label: 'Potential Gain', value: levels.r1, multiply: true });
+    } else if (taSuggestion.includes('SELL') || taSuggestion === 'LOCK PROFIT') {
+        srTargets.push({ label: 'Potential Risk', value: levels.s1, multiply: true });
+    }
+    srTargets.push({ label: 'Current Price', value: current, multiply: false });
+    srTargets.push({ label: 'Most Bought', value: data.high, multiply: false });
+    srTargets.push({ label: 'Most Sold', value: data.low, multiply: false });
+    // Multiply only those with multiply: true by BTC input
+    const srTargetsWithAmount = srTargets.map(tgt => ({
+        label: tgt.label,
+        value: tgt.multiply ? tgt.value * btcAmount : tgt.value
+    }));
+    // Calculate delta for Potential Gain/Risk
+    const mainTargets = [];
+    if (btcAmount > 0) {
+        // Potential Gain
+        if (typeof levels.r1 === 'number' && !isNaN(levels.r1)) {
+            const gain = (levels.r1 - current) * btcAmount;
+            mainTargets.push({
+                label: 'Potential Gain',
+                value: gain,
+                className: 'sr-gain', // always green
+                sign: gain >= 0 ? '+' : ''
+            });
+        }
+        // Potential Risk
+        if (typeof levels.s1 === 'number' && !isNaN(levels.s1)) {
+            const risk = (current - levels.s1) * btcAmount;
+            mainTargets.push({
+                label: 'Potential Risk',
+                value: risk,
+                className: 'sr-risk', // always red
+                sign: '-' // always minus
+            });
+        }
+    } else {
+        mainTargets.push({ label: 'Potential Gain', value: null, className: '', sign: '' });
+        mainTargets.push({ label: 'Potential Risk', value: null, className: '', sign: '' });
+    }
+    // Info section (unchanged)
+    const infoTargets = srTargetsWithAmount.filter(tgt => tgt.label === 'Current Price' || tgt.label === 'Most Bought' || tgt.label === 'Most Sold');
+    // Render for each converter card
+    const currencies = [
+        { id: 'usd', symbol: 'USD', format: v => formatPrice(v, 'USD') },
+        { id: 'myr', symbol: 'MYR', format: v => formatPrice(v, 'MYR') },
+        { id: 'cny', symbol: 'CNY', format: v => formatPrice(v, 'CNY') },
+        { id: 'idr', symbol: 'IDR', format: v => formatPrice(v, 'IDR') },
+    ];
+    currencies.forEach(cur => {
+        const el = document.getElementById(`sr-target-${cur.id}`);
+        if (!el) return;
+        let html = '<ul>';
+        mainTargets.forEach(tgt => {
+            if (tgt.value === null) {
+                html += `<li><span class='sr-label'>${tgt.label}:</span> <span class='sr-value'>-</span></li>`;
+            } else {
+                html += `<li><span class='sr-label'>${tgt.label}:</span> <span class='sr-value ${tgt.className}'>${tgt.sign}${cur.format(Math.abs(tgt.value))}</span></li>`;
+            }
+        });
+        html += '</ul>';
+        html += '<ul class="sr-target-list-info">';
+        infoTargets.forEach(tgt => {
+            html += `<li><span class='sr-label'>${tgt.label}:</span> <span class='sr-value'>${cur.format(tgt.value)}</span></li>`;
+        });
+        html += '</ul>';
+        el.innerHTML = html;
+    });
+}
+// Call on load and on currency/BTC input change
+if (typeof window !== 'undefined') {
+    window.renderSRTargetInConverter = renderSRTargetInConverter;
+    document.addEventListener('DOMContentLoaded', renderSRTargetInConverter);
+}
+// Patch into updateAllCurrencyDisplays and converter BTC input
+const origUpdateAllCurrencyDisplays = window.updateAllCurrencyDisplays;
+window.updateAllCurrencyDisplays = function() {
+    origUpdateAllCurrencyDisplays && origUpdateAllCurrencyDisplays();
+    renderSRTargetInConverter();
+};
+// If converter BTC input changes, also update S/R
+const btcInput = document.getElementById('conv-btc-main');
+if (btcInput) {
+    btcInput.addEventListener('input', renderSRTargetInConverter);
 }
 
 // Initialize the calculator when DOM is loaded
