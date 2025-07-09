@@ -4,7 +4,8 @@ class MultiTimeframeBTCCalculator {
         this.timeframes = {
             daily: { high: 0, low: 0, close: 0, levels: {} },
             weekly: { high: 0, low: 0, close: 0, levels: {} },
-            monthly: { high: 0, low: 0, close: 0, levels: {} }
+            monthly: { high: 0, low: 0, close: 0, levels: {} },
+            yearly: { high: 0, low: 0, close: 0, levels: {} }
         };
         this.currentTimeframe = 'daily';
         this.dataHistory = [];
@@ -39,7 +40,8 @@ class MultiTimeframeBTCCalculator {
         await Promise.all([
             this.getTimeframeData('daily', 1),
             this.getTimeframeData('weekly', 7),
-            this.getTimeframeData('monthly', 30)
+            this.getTimeframeData('monthly', 30),
+            this.getTimeframeData('yearly', 365)
         ]);
     }
     
@@ -51,20 +53,26 @@ class MultiTimeframeBTCCalculator {
             if (timeframe === 'daily') {
                 // Semalam sahaja
                 endDate = new Date(now);
-                endDate.setDate(endDate.getDate() - 1);
-                startDate = new Date(endDate);
+                endDate.setDate(endDate.getDate() - 1); // semalam
+                startDate = new Date(endDate); // hanya 1 hari
             } else if (timeframe === 'weekly') {
-                // 7 hari yang lalu (1-7 hari sebelum hari ini)
+                // 7 hari terkini (tidak termasuk hari ini)
                 endDate = new Date(now);
-                endDate.setDate(endDate.getDate() - 7);
+                endDate.setDate(endDate.getDate() - 1); // semalam
                 startDate = new Date(endDate);
-                startDate.setDate(startDate.getDate() - 6); // 7 hari sebelum endDate
+                startDate.setDate(startDate.getDate() - 6); // 7 hari terkini
             } else if (timeframe === 'monthly') {
-                // 30 hari yang lalu
+                // 30 hari terkini (tidak termasuk hari ini)
                 endDate = new Date(now);
-                endDate.setDate(endDate.getDate() - 30);
+                endDate.setDate(endDate.getDate() - 1); // semalam
                 startDate = new Date(endDate);
-                startDate.setDate(startDate.getDate() - 29); // 30 hari sebelum endDate
+                startDate.setDate(startDate.getDate() - 29); // 30 hari terkini
+            } else if (timeframe === 'yearly') {
+                // 365 hari terkini (tidak termasuk hari ini)
+                endDate = new Date(now);
+                endDate.setDate(endDate.getDate() - 1); // semalam
+                startDate = new Date(endDate);
+                startDate.setDate(startDate.getDate() - 364); // 365 hari terkini
             }
             
             // Get current price (close semasa)
@@ -73,7 +81,10 @@ class MultiTimeframeBTCCalculator {
             const currentClose = parseFloat(currentPriceData.price);
             
             // Get historical klines untuk data dalam tempoh tersebut
-            const klinesResponse = await fetch(`https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=1h&startTime=${startDate.getTime()}&endTime=${endDate.getTime()}&limit=1000`);
+            // For yearly, use klines interval 1d and limit 365
+            const klineInterval = (timeframe === 'yearly') ? '1d' : '1h';
+            const klineLimit = (timeframe === 'yearly') ? 365 : 1000;
+            const klinesResponse = await fetch(`https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=${klineInterval}&startTime=${startDate.getTime()}&endTime=${endDate.getTime()}&limit=${klineLimit}`);
             const klinesData = await klinesResponse.json();
             
             // Get trades dalam tempoh tersebut - increase limit untuk dapat lebih banyak data
@@ -330,9 +341,10 @@ class MultiTimeframeBTCCalculator {
         levels.forEach(level => {
             tableHTML += '<tr>';
             tableHTML += `<td><strong>${level.toUpperCase()}</strong></td>`;
-            tableHTML += `<td>${window.formatPrice ? window.formatPrice(this.timeframes.daily.levels[level]) : `$${this.timeframes.daily.levels[level]?.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}` || '-'}</td>`;
-            tableHTML += `<td>${window.formatPrice ? window.formatPrice(this.timeframes.weekly.levels[level]) : `$${this.timeframes.weekly.levels[level]?.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}` || '-'}</td>`;
-            tableHTML += `<td>${window.formatPrice ? window.formatPrice(this.timeframes.monthly.levels[level]) : `$${this.timeframes.monthly.levels[level]?.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}` || '-'}</td>`;
+            tableHTML += `<td>${formatSRLevel(this.timeframes.daily.levels[level])}</td>`;
+            tableHTML += `<td>${formatSRLevel(this.timeframes.weekly.levels[level])}</td>`;
+            tableHTML += `<td>${formatSRLevel(this.timeframes.monthly.levels[level])}</td>`;
+            tableHTML += `<td>${formatSRLevel(this.timeframes.yearly.levels[level])}</td>`;
             tableHTML += '</tr>';
         });
         
@@ -445,6 +457,11 @@ class MultiTimeframeBTCCalculator {
                 r1: this.timeframes.monthly.levels?.r1 || 0,
                 s1: this.timeframes.monthly.levels?.s1 || 0
             },
+            yearly: {
+                pivot: this.timeframes.yearly.levels?.pivot || 0,
+                r1: this.timeframes.yearly.levels?.r1 || 0,
+                s1: this.timeframes.yearly.levels?.s1 || 0
+            },
             timestamp: new Date().toISOString()
         };
         
@@ -472,7 +489,7 @@ class MultiTimeframeBTCCalculator {
     }
     
     updateSummaryTab() {
-        const timeframes = ['daily', 'weekly', 'monthly'];
+        const timeframes = ['daily', 'weekly', 'monthly', 'yearly'];
         timeframes.forEach(tf => {
             const data = this.timeframes[tf];
             const levels = data.levels;
@@ -540,14 +557,21 @@ class MultiTimeframeBTCCalculator {
                     taTarget = `<div class='next-target last-next-target'>Next Support: S1 <b>${window.formatPrice ? window.formatPrice(levels.s1) : levels.s1}</b></div>`;
                 }
 
+                // Determine which has more volume
+                const buyVol = data.volumeData?.[data.high]?.buy || 0;
+                const sellVol = data.volumeData?.[data.low]?.sell || 0;
+                const highlightBought = buyVol >= sellVol;
+                const highlightSold = sellVol > buyVol;
+                const mostBoughtStyle = highlightBought ? 'color:#16c784;font-weight:bold;' : '';
+                const mostSoldStyle = highlightSold ? 'color:#ff4b4b;font-weight:bold;' : '';
                 info = `
                     ${taTarget}
                     <div><b>SR</b>: ${srSuggestion}</div>
                     <div><b>VT</b>: ${vtSuggestion}</div>
                     <div><b>HV</b>: ${hvSuggestion}</div>
                     <div style="margin-top:8px;">Current Price: <b>${window.formatPrice ? window.formatPrice(current) : current}</b></div>
-                    <div>Most Bought: <b>${window.formatPrice ? window.formatPrice(data.high) : data.high}</b></div>
-                    <div>Most Sold: <b>${window.formatPrice ? window.formatPrice(data.low) : data.low}</b></div>
+                    <div style='${mostBoughtStyle}'>Most Bought: <b>${window.formatPrice ? window.formatPrice(data.high) : data.high}</b></div>
+                    <div style='${mostSoldStyle}'>Most Sold: <b>${window.formatPrice ? window.formatPrice(data.low) : data.low}</b></div>
                 `;
             }
             // Papar TA sahaja di bold putih
@@ -556,6 +580,12 @@ class MultiTimeframeBTCCalculator {
             document.getElementById(`summary-${tf}-info`).innerHTML = info;
         });
     }
+}
+
+// Add formatSRLevel helper at top-level
+function formatSRLevel(val) {
+    if (typeof val !== 'number' || isNaN(val) || val < 0) return '-';
+    return window.formatPrice ? window.formatPrice(val) : val.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2});
 }
 
 // Tab switching functionality
@@ -584,7 +614,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (chartCanvas) chartCanvas.style.display = 'none';
                 if (summaryCards) summaryCards.style.display = 'none';
                 if (converterWrapper) converterWrapper.style.display = 'block';
-            } else {
+            } else if (timeframe === 'calculator') {
+                if (chartCanvas) chartCanvas.style.display = 'none';
+                if (summaryCards) summaryCards.style.display = 'none';
+                if (converterWrapper) converterWrapper.style.display = 'none';
+            } else { // Default to chart if not summary, converter, or calculator
                 if (chartCanvas) chartCanvas.style.display = 'block';
                 if (summaryCards) summaryCards.style.display = 'none';
                 if (converterWrapper) converterWrapper.style.display = 'none';
@@ -800,7 +834,7 @@ function updateAllCurrencyDisplays() {
     }
     
     // Update all S/R levels for all timeframes
-    ['daily', 'weekly', 'monthly'].forEach(timeframe => {
+    ['daily', 'weekly', 'monthly', 'yearly'].forEach(timeframe => {
         const levels = window.calculator?.timeframes[timeframe]?.levels;
         if (levels) {
             ['r4', 'r3', 'r2', 'r1', 's1', 's2', 's3', 's4'].forEach(level => {
@@ -839,7 +873,7 @@ function updateAllCurrencyDisplays() {
     // Update chart if it exists and is visible
     if (window.btcChart && window.calculator) {
         const currentTimeframe = window.calculator.currentTimeframe;
-        if (currentTimeframe && currentTimeframe !== 'summary' && currentTimeframe !== 'converter') {
+        if (currentTimeframe && currentTimeframe !== 'summary' && currentTimeframe !== 'converter' && currentTimeframe !== 'calculator') {
             // Redraw chart with updated currency
             window.btcChart.draw();
         }
@@ -856,16 +890,108 @@ function updateComparisonTableCurrency() {
     levels.forEach(level => {
         tableHTML += '<tr>';
         tableHTML += `<td><strong>${level.toUpperCase()}</strong></td>`;
-        tableHTML += `<td>${formatPrice(window.calculator?.timeframes.daily.levels[level]) || '-'}</td>`;
-        tableHTML += `<td>${formatPrice(window.calculator?.timeframes.weekly.levels[level]) || '-'}</td>`;
-        tableHTML += `<td>${formatPrice(window.calculator?.timeframes.monthly.levels[level]) || '-'}</td>`;
+        tableHTML += `<td>${formatSRLevel(window.calculator?.timeframes.daily.levels[level]) || '-'}</td>`;
+        tableHTML += `<td>${formatSRLevel(window.calculator?.timeframes.weekly.levels[level]) || '-'}</td>`;
+        tableHTML += `<td>${formatSRLevel(window.calculator?.timeframes.monthly.levels[level]) || '-'}</td>`;
+        tableHTML += `<td>${formatSRLevel(window.calculator?.timeframes.yearly.levels[level]) || '-'}</td>`;
         tableHTML += '</tr>';
     });
     
     tableBody.innerHTML = tableHTML;
 }
 
-function updateSummaryTabCurrency() {}
+function updateSummaryTabCurrency() {
+    const timeframes = ['daily', 'weekly', 'monthly', 'yearly'];
+    timeframes.forEach(tf => {
+        const data = this.timeframes[tf];
+        const levels = data.levels;
+        let srSuggestion = '-', vtSuggestion = '-', taSuggestion = '-';
+        let taTarget = '';
+        let hvSuggestion = '-';
+        let info = '';
+        if (levels && data.high && data.low && data.close) {
+            const current = this.currentPrice;
+
+            // SR suggestion
+            if (current <= levels.s1 * 1.01) {
+                srSuggestion = 'BUY';
+            } else if (current >= levels.r1 * 0.99) {
+                srSuggestion = 'SELL';
+            } else {
+                srSuggestion = 'HOLD';
+            }
+
+            // VT suggestion
+            if (Math.abs(current - data.high) < Math.abs(current - data.low)) {
+                if (Math.abs(current - data.high) < 1) {
+                    vtSuggestion = 'HOLD';
+                } else if (data.high > current) {
+                    vtSuggestion = 'LOCK PROFIT';
+                } else {
+                    vtSuggestion = 'BUY';
+                }
+            } else {
+                if (data.low > current) {
+                    vtSuggestion = 'SELL';
+                } else {
+                    vtSuggestion = 'BUY';
+                }
+            }
+
+            // HV suggestion (High Volume Signal)
+            let highVolumeBuy = data.volumeData?.[data.high]?.buy || 0;
+            let highVolumeSell = data.volumeData?.[data.low]?.sell || 0;
+            if (highVolumeBuy > highVolumeSell) {
+                hvSuggestion = 'BUY';
+            } else if (highVolumeSell > highVolumeBuy) {
+                hvSuggestion = 'SELL';
+            } else {
+                hvSuggestion = 'HOLD';
+            }
+
+            // Combine TA logic
+            const signals = [srSuggestion, vtSuggestion, hvSuggestion];
+            const buyCount = signals.filter(s => s.includes('BUY')).length;
+            const sellCount = signals.filter(s => s.includes('SELL')).length;
+            if (buyCount >= 2) taSuggestion = 'BUY';
+            else if (sellCount >= 2) taSuggestion = 'SELL';
+            else taSuggestion = 'HOLD';
+
+            // Next target/support untuk TA (guna formatPrice)
+            if (taSuggestion === 'HOLD' || taSuggestion === 'CAUTION') {
+                taTarget = `
+                    <div class='next-target' style='margin-bottom:0;'>Next Target: R1 <b>${window.formatPrice ? window.formatPrice(levels.r1) : levels.r1}</b></div>
+                    <div class='next-target last-next-target'>Next Support: S1 <b>${window.formatPrice ? window.formatPrice(levels.s1) : levels.s1}</b></div>
+                `;
+            } else if (taSuggestion.includes('BUY')) {
+                taTarget = `<div class='next-target last-next-target'>Next Target: R1 <b>${window.formatPrice ? window.formatPrice(levels.r1) : levels.r1}</b></div>`;
+            } else if (taSuggestion.includes('SELL') || taSuggestion === 'LOCK PROFIT') {
+                taTarget = `<div class='next-target last-next-target'>Next Support: S1 <b>${window.formatPrice ? window.formatPrice(levels.s1) : levels.s1}</b></div>`;
+            }
+
+            // Determine which has more volume
+            const buyVol = data.volumeData?.[data.high]?.buy || 0;
+            const sellVol = data.volumeData?.[data.low]?.sell || 0;
+            const highlightBought = buyVol >= sellVol;
+            const highlightSold = sellVol > buyVol;
+            const mostBoughtStyle = highlightBought ? 'color:#16c784;font-weight:bold;' : '';
+            const mostSoldStyle = highlightSold ? 'color:#ff4b4b;font-weight:bold;' : '';
+            info = `
+                ${taTarget}
+                <div><b>SR</b>: ${srSuggestion}</div>
+                <div><b>VT</b>: ${vtSuggestion}</div>
+                <div><b>HV</b>: ${hvSuggestion}</div>
+                <div style="margin-top:8px;">Current Price: <b>${window.formatPrice ? window.formatPrice(current) : current}</b></div>
+                <div style='${mostBoughtStyle}'>Most Bought: <b>${window.formatPrice ? window.formatPrice(data.high) : data.high}</b></div>
+                <div style='${mostSoldStyle}'>Most Sold: <b>${window.formatPrice ? window.formatPrice(data.low) : data.low}</b></div>
+            `;
+        }
+        // Papar TA sahaja di bold putih
+        document.getElementById(`summary-${tf}-suggestion`).textContent = taSuggestion;
+        // Papar next target/support TA di bawah, kemudian SR & VT & HV, kemudian info harga
+        document.getElementById(`summary-${tf}-info`).innerHTML = info;
+    });
+}
 
 // Currency toggle event listeners
 function setupCurrencyToggle() {
@@ -929,8 +1055,8 @@ function updateCurrencyButtonStates() {
 
 // --- S/R Target Price in Converter Cards ---
 function renderSRTargetInConverter() {
-    // Use daily timeframe for S/R target (can be changed to weekly/monthly if needed)
-    const tf = 'daily';
+    // Use monthly timeframe for S/R target (was daily)
+    const tf = 'monthly';
     const data = window.calculator?.timeframes?.[tf];
     if (!data || !data.levels) return;
     const levels = data.levels;
@@ -954,8 +1080,24 @@ function renderSRTargetInConverter() {
         srTargets.push({ label: 'Potential Risk', value: levels.s1, multiply: true });
     }
     srTargets.push({ label: 'Current Price', value: current, multiply: false });
-    srTargets.push({ label: 'Most Bought', value: data.high, multiply: false });
-    srTargets.push({ label: 'Most Sold', value: data.low, multiply: false });
+    // Calculate average most bought/sold from summary timeframes
+    const tfs = ['daily', 'weekly', 'monthly', 'yearly'];
+    let sumHigh = 0, sumLow = 0, countHigh = 0, countLow = 0;
+    tfs.forEach(tf => {
+        const tfData = window.calculator?.timeframes?.[tf];
+        if (tfData && typeof tfData.high === 'number' && !isNaN(tfData.high)) {
+            sumHigh += tfData.high;
+            countHigh++;
+        }
+        if (tfData && typeof tfData.low === 'number' && !isNaN(tfData.low)) {
+            sumLow += tfData.low;
+            countLow++;
+        }
+    });
+    const avgMostBought = countHigh > 0 ? sumHigh / countHigh : null;
+    const avgMostSold = countLow > 0 ? sumLow / countLow : null;
+    srTargets.push({ label: 'Average Most Bought', value: avgMostBought, multiply: false });
+    srTargets.push({ label: 'Average Most Sold', value: avgMostSold, multiply: false });
     // Multiply only those with multiply: true by BTC input
     const srTargetsWithAmount = srTargets.map(tgt => ({
         label: tgt.label,
@@ -989,7 +1131,13 @@ function renderSRTargetInConverter() {
         mainTargets.push({ label: 'Potential Risk', value: null, className: '', sign: '' });
     }
     // Info section (unchanged)
-    const infoTargets = srTargetsWithAmount.filter(tgt => tgt.label === 'Current Price' || tgt.label === 'Most Bought' || tgt.label === 'Most Sold');
+    const infoTargets = srTargetsWithAmount.filter(tgt => tgt.label === 'Current Price' || tgt.label === 'Most Bought' || tgt.label === 'Most Sold' || tgt.label === 'Average Most Bought' || tgt.label === 'Average Most Sold');
+    // Get yearly volume info for highlight logic
+    const yearly = window.calculator?.timeframes?.yearly;
+    const yearlyBuyVol = yearly?.volumeData?.[yearly?.high]?.buy || 0;
+    const yearlySellVol = yearly?.volumeData?.[yearly?.low]?.sell || 0;
+    const highlightAvgBought = yearlyBuyVol >= yearlySellVol;
+    const highlightAvgSold = yearlySellVol > yearlyBuyVol;
     // Render for each converter card
     const currencies = [
         { id: 'usd', symbol: 'USD', format: v => formatPrice(v, 'USD') },
@@ -1011,7 +1159,10 @@ function renderSRTargetInConverter() {
         html += '</ul>';
         html += '<ul class="sr-target-list-info">';
         infoTargets.forEach(tgt => {
-            html += `<li><span class='sr-label'>${tgt.label}:</span> <span class='sr-value'>${cur.format(tgt.value)}</span></li>`;
+            let highlight = '';
+            if (tgt.label === 'Average Most Bought' && highlightAvgBought) highlight = " style='color:#16c784;font-weight:bold;'";
+            if (tgt.label === 'Average Most Sold' && highlightAvgSold) highlight = " style='color:#ff4b4b;font-weight:bold;'";
+            html += `<li><span class='sr-label'${highlight}>${tgt.label}:</span> <span class='sr-value'${highlight}>${tgt.value ? cur.format(tgt.value) : '-'}</span></li>`;
         });
         html += '</ul>';
         el.innerHTML = html;
@@ -1035,8 +1186,8 @@ if (btcInput) {
 }
 
 function updateConverterTASuggestion() {
-    const timeframes = ['daily', 'weekly', 'monthly'];
-    const labels = { daily: 'Daily', weekly: 'Weekly', monthly: 'Monthly' };
+    const timeframes = ['daily', 'weekly', 'monthly', 'yearly'];
+    const labels = { daily: 'Daily', weekly: 'Weekly', monthly: 'Monthly', yearly: 'Yearly' };
     timeframes.forEach(tf => {
         const data = window.calculator?.timeframes?.[tf];
         const el = document.getElementById(`converter-ta-${tf}`);
@@ -1136,9 +1287,9 @@ function updateCalculatorTab() {
 
     // Get current price (USD base)
     const currentPriceUSD = window.calculator?.currentPrice || 0;
-    // Get daily S/R levels (USD base)
-    const levels = window.calculator?.timeframes?.daily?.levels || {};
-    const data = window.calculator?.timeframes?.daily || {};
+    // Get monthly S/R levels (USD base)
+    const levels = window.calculator?.timeframes?.monthly?.levels || {};
+    const data = window.calculator?.timeframes?.monthly || {};
 
     // For each currency card
     const currencies = [
@@ -1162,6 +1313,12 @@ function updateCalculatorTab() {
         const totalCost = entryPriceCur * btcAmount;
         const currentValue = currentPrice * sellAmount;
         const profitLoss = (currentPrice - entryPriceCur) * sellAmount;
+        // === FIX: Calculate gain and risk for balance BTC ===
+        let gain = null, risk = null;
+        if (balanceBtc > 0) {
+            gain = (r1 - currentPrice) * balanceBtc;
+            risk = (currentPrice - s1) * balanceBtc;
+        }
         // Main profit/loss output
         let profitText = '';
         let profitClass = '';
@@ -1181,49 +1338,36 @@ function updateCalculatorTab() {
         srHtml += `<li><span class='sr-label'>Current Price:</span> <span class='sr-value'>${format(currentPrice, cur.symbol)}</span></li>`;
         srHtml += `<li><span class='sr-label'>Next Target:</span> <span class='sr-value'>${format(r1, cur.symbol)}</span></li>`;
         srHtml += `<li><span class='sr-label'>Next Support:</span> <span class='sr-value'>${format(s1, cur.symbol)}</span></li>`;
-        srHtml += `<li><span class='sr-label'>Most Bought:</span> <span class='sr-value'>${format(high, cur.symbol)}</span></li>`;
-        srHtml += `<li><span class='sr-label'>Most Sold:</span> <span class='sr-value'>${format(low, cur.symbol)}</span></li>`;
-        srHtml += '</ul>';
-        // --- TA summary logic (majority) ---
-        let srSuggestion = '-', vtSuggestion = '-', hvSuggestion = '-', taSuggestion = '-';
-        // SR
-        if (currentPrice <= s1 * 1.01) srSuggestion = 'BUY';
-        else if (currentPrice >= r1 * 0.99) srSuggestion = 'SELL';
-        else srSuggestion = 'HOLD';
-        // VT
-        if (Math.abs(currentPrice - high) < Math.abs(currentPrice - low)) {
-            if (Math.abs(currentPrice - high) < 1) vtSuggestion = 'HOLD';
-            else if (high > currentPrice) vtSuggestion = 'LOCK PROFIT';
-            else vtSuggestion = 'BUY';
-        } else {
-            if (low > currentPrice) vtSuggestion = 'SELL';
-            else vtSuggestion = 'BUY';
-        }
-        // HV
-        let highVolumeBuy = data.volumeData?.[data.high]?.buy || 0;
-        let highVolumeSell = data.volumeData?.[data.low]?.sell || 0;
-        if (highVolumeBuy > highVolumeSell) hvSuggestion = 'BUY';
-        else if (highVolumeSell > highVolumeBuy) hvSuggestion = 'SELL';
-        else hvSuggestion = 'HOLD';
-        // Combine
-        const signals = [srSuggestion, vtSuggestion, hvSuggestion];
-        const buyCount = signals.filter(s => s.includes('BUY')).length;
-        const sellCount = signals.filter(s => s.includes('SELL')).length;
-        if (buyCount >= 2) taSuggestion = 'BUY';
-        else if (sellCount >= 2) taSuggestion = 'SELL';
-        else taSuggestion = 'HOLD';
-        // Gain/risk (NEW FORMULA for calculator tab only)
-        let gain = null, risk = null;
-        if (balanceBtc > 0 && levels.r1 && levels.s1) {
-            if (taSuggestion === 'BUY') gain = r1 * balanceBtc;
-            else if (taSuggestion === 'SELL' || taSuggestion === 'LOCK PROFIT') risk = s1 * balanceBtc;
-            else if (taSuggestion === 'HOLD' || taSuggestion === 'CAUTION') {
-                gain = r1 * balanceBtc;
-                risk = s1 * balanceBtc;
+        // Calculate average most bought/sold from summary timeframes (same as converter)
+        const tfs = ['daily', 'weekly', 'monthly', 'yearly'];
+        let sumHigh = 0, sumLow = 0, countHigh = 0, countLow = 0;
+        tfs.forEach(tf => {
+            const tfData = window.calculator?.timeframes?.[tf];
+            if (tfData && typeof tfData.high === 'number' && !isNaN(tfData.high)) {
+                sumHigh += tfData.high;
+                countHigh++;
             }
-        }
+            if (tfData && typeof tfData.low === 'number' && !isNaN(tfData.low)) {
+                sumLow += tfData.low;
+                countLow++;
+            }
+        });
+        const avgMostBought = countHigh > 0 ? sumHigh / countHigh : null;
+        const avgMostSold = countLow > 0 ? sumLow / countLow : null;
+        srHtml += `<li><span class='sr-label'>Average Most Bought:</span> <span class='sr-value'>${avgMostBought ? format(avgMostBought, cur.symbol) : '-'}</span></li>`;
+        srHtml += `<li><span class='sr-label'>Average Most Sold:</span> <span class='sr-value'>${avgMostSold ? format(avgMostSold, cur.symbol) : '-'}</span></li>`;
+        srHtml += '</ul>';
+        // Add a dashed line and spacing before balance BTC and below
+        srHtml += `<div style="margin:10px 0 8px 0;"><hr style='border:0;border-top:1.5px dashed #888;'></div>`;
         srHtml += '<ul>';
         srHtml += `<li><span class='sr-label'>Balance BTC:</span> <span class='sr-value'>${balanceBtc.toFixed(8)}</span></li>`;
+        // Add Current Value above Reward Value
+        const currentValueBalance = balanceBtc * currentPrice;
+        // Highlight logic for Current Value
+        let currentValueClass = '';
+        if (profitClass === 'positive') currentValueClass = 'sr-gain';
+        else if (profitClass === 'negative') currentValueClass = 'sr-risk';
+        srHtml += `<li><span class='sr-label'>Current Value:</span> <span class='sr-value ${currentValueClass}'>${format(currentValueBalance, cur.symbol)}</span></li>`;
         if (gain !== null) srHtml += `<li><span class='sr-label'>Reward Value:</span> <span class='sr-value sr-gain'>${gain >= 0 ? '+' : ''}${format(Math.abs(gain), cur.symbol)}</span></li>`;
         if (risk !== null) srHtml += `<li><span class='sr-label'>Risk Value:</span> <span class='sr-value sr-risk'>-${format(Math.abs(risk), cur.symbol)}</span></li>`;
         srHtml += '</ul>';

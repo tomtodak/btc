@@ -547,16 +547,18 @@ body {
   max-width: 900px;
 }
 .summary-card {
-  background: #23283a;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px #0004;
-  padding: 18px 16px 16px 16px;
-  min-width: 210px;
-  max-width: 260px;
-  flex: 1 1 210px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+  min-width: 270px;
+  max-width: 320px;
+  width: 23%;
+  margin: 0 10px;
+  display: inline-block;
+  vertical-align: top;
+  background: #23243a;
+  border-radius: 18px;
+  box-shadow: 0 2px 16px rgba(0,0,0,0.12);
+  padding: 24px 18px 18px 18px;
+  color: #fff;
+  text-align: center;
 }
 .summary-title {
   font-size: 1.1rem;
@@ -570,17 +572,39 @@ body {
   color: #ffe066;
 }
 .summary-info {
-  width: 100%;
-  text-align: center;
-  font-size: 1rem;
-  color: #fff;
-  margin-top: 8px;
+  font-size: 0.98em;
+  margin-top: 12px;
+  margin-bottom: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.summary-card .info-label, .summary-card .info-value {
+  font-size: 0.97em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 @media (max-width: 900px) {
   .summary-cards {
     flex-direction: column;
     align-items: center;
     gap: 14px;
+  }
+}
+@media (max-width: 1200px) {
+  .summary-card {
+    min-width: 180px;
+    max-width: 100%;
+    width: 48%;
+    margin: 0 0 18px 0;
+  }
+}
+@media (max-width: 700px) {
+  .summary-card {
+    width: 100%;
+    min-width: 0;
+    margin: 0 0 18px 0;
   }
 }
 /* Ensure no .converter-main, .conversion-cards, .btc-input-wrapper, etc. override summary styles */

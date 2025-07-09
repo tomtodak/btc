@@ -37,6 +37,7 @@
           <button class="tab-button" data-timeframe="daily">Daily</button>
           <button class="tab-button" data-timeframe="weekly">Weekly</button>
           <button class="tab-button" data-timeframe="monthly">Monthly</button>
+          <button class="tab-button" data-timeframe="yearly">Yearly</button>
           <button class="tab-button" data-timeframe="summary">Summary</button>
           <button class="tab-button" data-timeframe="converter">Converter</button>
           <button class="tab-button" data-timeframe="calculator">Calculator</button>
@@ -208,6 +209,11 @@
                     <div class="summary-suggestion" id="summary-monthly-suggestion">-</div>
                     <div class="summary-info" id="summary-monthly-info">-</div>
                 </div>
+                <div class="summary-card" id="summary-yearly-card">
+                    <div class="summary-title">Yearly</div>
+                    <div class="summary-suggestion" id="summary-yearly-suggestion">-</div>
+                    <div class="summary-info" id="summary-yearly-info">-</div>
+                </div>
             </div>
                 </div>
                 
@@ -318,6 +324,45 @@
                     </div>
                     <div class="suggestion-box" id="monthly-suggestion">-</div>
                 </div>
+                <!-- Yearly Content -->
+                <div id="yearly-content" class="timeframe-content">
+                    <div class="levels-grid-new">
+                        <div class="level-row">
+                            <div class="level-card resistance"><div class="level-title">R4</div><div class="price-value" id="yearly-r4">-</div></div>
+                            <div class="level-card resistance"><div class="level-title">R3</div><div class="price-value" id="yearly-r3">-</div></div>
+                            <div class="level-card resistance"><div class="level-title">R2</div><div class="price-value" id="yearly-r2">-</div></div>
+                            <div class="level-card resistance"><div class="level-title">R1</div><div class="price-value" id="yearly-r1">-</div></div>
+                        </div>
+                        <div class="level-row pivot-row">
+                            <div class="level-card pivot"><div class="level-title">Current Price</div><div class="price-value" id="yearly-pivot">-</div></div>
+                        </div>
+                        <div class="level-row">
+                            <div class="level-card support"><div class="level-title">S1</div><div class="price-value" id="yearly-s1">-</div></div>
+                            <div class="level-card support"><div class="level-title">S2</div><div class="price-value" id="yearly-s2">-</div></div>
+                            <div class="level-card support"><div class="level-title">S3</div><div class="price-value" id="yearly-s3">-</div></div>
+                            <div class="level-card support"><div class="level-title">S4</div><div class="price-value" id="yearly-s4">-</div></div>
+                        </div>
+                    </div>
+                    <div class="data-info">
+                        <div class="info-item">
+                            <span class="info-label">High:</span>
+                            <span class="info-value" id="yearly-high">-</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Low:</span>
+                            <span class="info-value" id="yearly-low">-</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Close:</span>
+                            <span class="info-value" id="yearly-close">-</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Pivot:</span>
+                            <span class="info-value" id="yearly-pivot-info">-</span>
+                        </div>
+                    </div>
+                    <div class="suggestion-box" id="yearly-suggestion">-</div>
+                </div>
                 </div>
             </div>
         </div>
@@ -337,10 +382,11 @@
                         <th>Daily</th>
                         <th>Weekly</th>
                         <th>Monthly</th>
+                        <th>Yearly</th>
                     </tr>
                 </thead>
                 <tbody id="comparisonTable">
-                    <tr><td colspan="4">Loading...</td></tr>
+                    <tr><td colspan="5">Loading...</td></tr>
                 </tbody>
             </table>
     </div>

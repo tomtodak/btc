@@ -57,9 +57,17 @@ class BTCCandlestickChart {
 
     async fetchAndDraw() {
         try {
-            const url = `https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=${this.interval}&limit=${this.limit}`;
-            const res = await fetch(url);
-            const klines = await res.json();
+            let klines;
+            if (window.calculator && window.calculator.currentTimeframe === 'yearly') {
+                // For yearly, fetch 130 weekly candles (2.5 years)
+                const url = `https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=1w&limit=130`;
+                const res = await fetch(url);
+                klines = await res.json();
+            } else {
+                const url = `https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=${this.interval}&limit=${this.limit}`;
+                const res = await fetch(url);
+                klines = await res.json();
+            }
             this.data = klines.map(k => ({
                 time: k[0],
                 open: parseFloat(k[1]),
