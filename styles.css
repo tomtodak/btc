@@ -579,6 +579,14 @@ body {
   overflow: hidden;
   text-overflow: ellipsis;
 }
+.summary-info b {
+  font-size: 0.97em;
+  font-weight: 600;
+}
+.summary-info div {
+  font-size: 0.97em;
+  line-height: 1.2;
+}
 .summary-card .info-label, .summary-card .info-value {
   font-size: 0.97em;
   white-space: nowrap;
