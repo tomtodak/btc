@@ -1390,6 +1390,22 @@ function updateCalculatorTab() {
         srHtml += `<li><span class='sr-label'>Current Value:</span> <span class='sr-value ${currentValueClass}'>${format(currentValueBalance, cur.symbol)}</span></li>`;
         if (gain !== null) srHtml += `<li><span class='sr-label'>Reward Value:</span> <span class='sr-value sr-gain'>${gain >= 0 ? '+' : ''}${format(Math.abs(gain), cur.symbol)}</span></li>`;
         if (risk !== null) srHtml += `<li><span class='sr-label'>Risk Value:</span> <span class='sr-value sr-risk'>-${format(Math.abs(risk), cur.symbol)}</span></li>`;
+        // === Long Term Reward/Risk Value (Yearly S/R) ===
+        const yearlyLevels = window.calculator?.timeframes?.yearly?.levels;
+        if (
+            balanceBtc > 0 &&
+            yearlyLevels &&
+            typeof yearlyLevels.r1 === 'number' && !isNaN(yearlyLevels.r1) &&
+            typeof yearlyLevels.s1 === 'number' && !isNaN(yearlyLevels.s1)
+        ) {
+            const longGain = (yearlyLevels.r1 - currentPrice) * balanceBtc;
+            const longRisk = (currentPrice - yearlyLevels.s1) * balanceBtc;
+            srHtml += `<li><span class='sr-label'>Long Term Reward Value:</span> <span class='sr-value sr-gain'>${longGain >= 0 ? '+' : ''}${format(Math.abs(longGain), cur.symbol)}</span></li>`;
+            srHtml += `<li><span class='sr-label'>Long Term Risk Value:</span> <span class='sr-value sr-risk'>-${format(Math.abs(longRisk), cur.symbol)}</span></li>`;
+        } else {
+            srHtml += `<li><span class='sr-label'>Long Term Reward Value:</span> <span class='sr-value'>-</span></li>`;
+            srHtml += `<li><span class='sr-label'>Long Term Risk Value:</span> <span class='sr-value'>-</span></li>`;
+        }
         srHtml += '</ul>';
         srTargetEl.innerHTML = srHtml;
     });
