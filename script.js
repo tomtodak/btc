@@ -1338,25 +1338,26 @@ function updateCalculatorTab() {
         srHtml += `<li><span class='sr-label'>Current Price:</span> <span class='sr-value'>${format(currentPrice, cur.symbol)}</span></li>`;
         srHtml += `<li><span class='sr-label'>Next Target:</span> <span class='sr-value'>${format(r1, cur.symbol)}</span></li>`;
         srHtml += `<li><span class='sr-label'>Next Support:</span> <span class='sr-value'>${format(s1, cur.symbol)}</span></li>`;
-        // Calculate average most bought/sold from summary timeframes (same as converter)
+        // Calculate average most bought/sold from summary timeframes (always in USD, then convert)
         const tfs = ['daily', 'weekly', 'monthly', 'yearly'];
-        let sumHigh = 0, sumLow = 0, countHigh = 0, countLow = 0;
+        let sumHighUSD = 0, sumLowUSD = 0, countHigh = 0, countLow = 0;
         tfs.forEach(tf => {
             const tfData = window.calculator?.timeframes?.[tf];
             if (tfData && typeof tfData.high === 'number' && !isNaN(tfData.high)) {
-                sumHigh += tfData.high;
+                sumHighUSD += tfData.high; // always USD
                 countHigh++;
             }
             if (tfData && typeof tfData.low === 'number' && !isNaN(tfData.low)) {
-                sumLow += tfData.low;
+                sumLowUSD += tfData.low; // always USD
                 countLow++;
             }
         });
-        const avgMostBought = countHigh > 0 ? sumHigh / countHigh : null;
-        const avgMostSold = countLow > 0 ? sumLow / countLow : null;
+        const avgMostBoughtUSD = countHigh > 0 ? sumHighUSD / countHigh : null;
+        const avgMostSoldUSD = countLow > 0 ? sumLowUSD / countLow : null;
+        const avgMostBought = avgMostBoughtUSD !== null ? getPrice(avgMostBoughtUSD, cur.symbol) : null;
+        const avgMostSold = avgMostSoldUSD !== null ? getPrice(avgMostSoldUSD, cur.symbol) : null;
         srHtml += `<li><span class='sr-label'>Average Most Bought:</span> <span class='sr-value'>${avgMostBought ? format(avgMostBought, cur.symbol) : '-'}</span></li>`;
         srHtml += `<li><span class='sr-label'>Average Most Sold:</span> <span class='sr-value'>${avgMostSold ? format(avgMostSold, cur.symbol) : '-'}</span></li>`;
-        srHtml += '</ul>';
         // Add a dashed line and spacing before balance BTC and below
         srHtml += `<div style="margin:10px 0 8px 0;"><hr style='border:0;border-top:1.5px dashed #888;'></div>`;
         srHtml += '<ul>';
