@@ -1156,6 +1156,17 @@ function renderSRTargetInConverter() {
                 html += `<li><span class='sr-label'>${tgt.label}:</span> <span class='sr-value ${tgt.className}'>${tgt.sign}${cur.format(Math.abs(tgt.value))}</span></li>`;
             }
         });
+        // === Long Term Potential Gain/Risk (Yearly S/R) ===
+        if (btcAmount > 0 && typeof yearlyLevels.r1 === 'number' && typeof yearlyLevels.s1 === 'number') {
+            const current = window.calculator?.currentPrice || 0;
+            const longGain = (yearlyLevels.r1 - current) * btcAmount;
+            const longRisk = (current - yearlyLevels.s1) * btcAmount;
+            html += `<li><span class='sr-label'>Long Term Potential Gain:</span> <span class='sr-value sr-gain'>${longGain >= 0 ? '+' : ''}${cur.format(Math.abs(longGain))}</span></li>`;
+            html += `<li><span class='sr-label'>Long Term Potential Risk:</span> <span class='sr-value sr-risk'>-${cur.format(Math.abs(longRisk))}</span></li>`;
+        } else {
+            html += `<li><span class='sr-label'>Long Term Potential Gain:</span> <span class='sr-value'>-</span></li>`;
+            html += `<li><span class='sr-label'>Long Term Potential Risk:</span> <span class='sr-value'>-</span></li>`;
+        }
         html += '</ul>';
         html += '<ul class="sr-target-list-info">';
         infoTargets.forEach(tgt => {
