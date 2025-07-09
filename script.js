@@ -1072,12 +1072,12 @@ function renderSRTargetInConverter() {
     else if (current >= levels.r1 * 0.99) taSuggestion = 'SELL';
     else taSuggestion = 'HOLD';
     if (taSuggestion === 'HOLD' || taSuggestion === 'CAUTION') {
-        srTargets.push({ label: 'Potential Gain', value: levels.r1, multiply: true });
-        srTargets.push({ label: 'Potential Risk', value: levels.s1, multiply: true });
+        srTargets.push({ label: 'Mid/Short Potential Gain', value: levels.r1, multiply: true });
+        srTargets.push({ label: 'Mid/Short Potential Risk', value: levels.s1, multiply: true });
     } else if (taSuggestion.includes('BUY')) {
-        srTargets.push({ label: 'Potential Gain', value: levels.r1, multiply: true });
+        srTargets.push({ label: 'Mid/Short Potential Gain', value: levels.r1, multiply: true });
     } else if (taSuggestion.includes('SELL') || taSuggestion === 'LOCK PROFIT') {
-        srTargets.push({ label: 'Potential Risk', value: levels.s1, multiply: true });
+        srTargets.push({ label: 'Mid/Short Potential Risk', value: levels.s1, multiply: true });
     }
     srTargets.push({ label: 'Current Price', value: current, multiply: false });
     // Calculate average most bought/sold from summary timeframes
@@ -1151,13 +1151,19 @@ function renderSRTargetInConverter() {
         let html = '<ul>';
         mainTargets.forEach(tgt => {
             if (tgt.value === null) {
-                html += `<li><span class='sr-label'>${tgt.label}:</span> <span class='sr-value'>-</span></li>`;
+                html += `<li><span class='sr-label'>${tgt.label.replace('Potential Gain', 'Mid/Short Potential Gain').replace('Potential Risk', 'Mid/Short Potential Risk')}:</span> <span class='sr-value'>-</span></li>`;
             } else {
-                html += `<li><span class='sr-label'>${tgt.label}:</span> <span class='sr-value ${tgt.className}'>${tgt.sign}${cur.format(Math.abs(tgt.value))}</span></li>`;
+                html += `<li><span class='sr-label'>${tgt.label.replace('Potential Gain', 'Mid/Short Potential Gain').replace('Potential Risk', 'Mid/Short Potential Risk')}:</span> <span class='sr-value ${tgt.className}'>${tgt.sign}${cur.format(Math.abs(tgt.value))}</span></li>`;
             }
         });
         // === Long Term Potential Gain/Risk (Yearly S/R) ===
-        if (btcAmount > 0 && typeof yearlyLevels.r1 === 'number' && typeof yearlyLevels.s1 === 'number') {
+        const yearlyLevels = window.calculator?.timeframes?.yearly?.levels;
+        if (
+            btcAmount > 0 &&
+            yearlyLevels &&
+            typeof yearlyLevels.r1 === 'number' && !isNaN(yearlyLevels.r1) &&
+            typeof yearlyLevels.s1 === 'number' && !isNaN(yearlyLevels.s1)
+        ) {
             const current = window.calculator?.currentPrice || 0;
             const longGain = (yearlyLevels.r1 - current) * btcAmount;
             const longRisk = (current - yearlyLevels.s1) * btcAmount;
@@ -1371,6 +1377,8 @@ function updateCalculatorTab() {
         srHtml += `<li><span class='sr-label'>Average Most Sold:</span> <span class='sr-value'>${avgMostSold ? format(avgMostSold, cur.symbol) : '-'}</span></li>`;
         // Add a dashed line and spacing before balance BTC and below
         srHtml += `<div style="margin:10px 0 8px 0;"><hr style='border:0;border-top:1.5px dashed #888;'></div>`;
+        // Portfolio title
+        srHtml += `<div class='portfolio-title'>PORTFOLIO</div>`;
         srHtml += '<ul>';
         srHtml += `<li><span class='sr-label'>Balance BTC:</span> <span class='sr-value'>${balanceBtc.toFixed(8)}</span></li>`;
         // Add Current Value above Reward Value

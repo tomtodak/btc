@@ -1089,3 +1089,13 @@ body {
   min-width: 60px;
   text-align: right;
 } 
+
+.portfolio-title {
+  font-weight: bold;
+  text-transform: uppercase;
+  color: #f4d35e;
+  margin-bottom: 4px;
+  letter-spacing: 1px;
+  font-size: 0.95em;
+  margin-top: 2px;
+} 
