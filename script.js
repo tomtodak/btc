@@ -81,9 +81,9 @@ class MultiTimeframeBTCCalculator {
             const currentClose = parseFloat(currentPriceData.price);
             
             // Get historical klines untuk data dalam tempoh tersebut
-            // For yearly, use klines interval 1d and limit 365
-            const klineInterval = (timeframe === 'yearly') ? '1d' : '1h';
-            const klineLimit = (timeframe === 'yearly') ? 365 : 1000;
+            // For yearly, use klines interval 1M and limit 36 (3 years)
+            const klineInterval = (timeframe === 'yearly') ? '1M' : '1h';
+            const klineLimit = (timeframe === 'yearly') ? 36 : 1000;
             const klinesResponse = await fetch(`https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=${klineInterval}&startTime=${startDate.getTime()}&endTime=${endDate.getTime()}&limit=${klineLimit}`);
             const klinesData = await klinesResponse.json();
             
