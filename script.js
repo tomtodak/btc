@@ -27,12 +27,21 @@ class MultiTimeframeBTCCalculator {
     
     async getCurrentPrice() {
         try {
-            const response = await fetch('https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT');
+            // Use CoinGecko for more accurate global market price
+            const response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd');
             const data = await response.json();
-            this.currentPrice = parseFloat(data.price);
+            this.currentPrice = parseFloat(data.bitcoin.usd);
             this.updateStatus('Current price loaded successfully', 'success');
         } catch (error) {
-            this.updateStatus('Error loading current price', 'error');
+            // Fallback to Binance if CoinGecko fails
+            try {
+                const binanceResponse = await fetch('https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT');
+                const binanceData = await binanceResponse.json();
+                this.currentPrice = parseFloat(binanceData.price);
+                this.updateStatus('Current price loaded from Binance (fallback)', 'success');
+            } catch (fallbackError) {
+                this.updateStatus('Error loading current price', 'error');
+            }
         }
     }
     
@@ -75,10 +84,18 @@ class MultiTimeframeBTCCalculator {
                 startDate.setDate(startDate.getDate() - 364); // 365 hari terkini
             }
             
-            // Get current price (close semasa)
-            const currentPriceResponse = await fetch('https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT');
-            const currentPriceData = await currentPriceResponse.json();
-            const currentClose = parseFloat(currentPriceData.price);
+            // Get current price (close semasa) - use CoinGecko for consistency
+            let currentClose;
+            try {
+                const currentPriceResponse = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd');
+                const currentPriceData = await currentPriceResponse.json();
+                currentClose = parseFloat(currentPriceData.bitcoin.usd);
+            } catch (error) {
+                // Fallback to Binance if CoinGecko fails
+                const currentPriceResponse = await fetch('https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT');
+                const currentPriceData = await currentPriceResponse.json();
+                currentClose = parseFloat(currentPriceData.price);
+            }
             
             // Get historical klines untuk data dalam tempoh tersebut
             // For yearly, use klines interval 1M and limit 36 (3 years)
@@ -191,15 +208,19 @@ class MultiTimeframeBTCCalculator {
     calculateLevels(timeframe) {
         const { high, low, close } = this.timeframes[timeframe];
         
+        // Fix 2: Ensure proper order (high > low)
+        const adjustedHigh = Math.max(high, low);
+        const adjustedLow = Math.min(high, low);
+        
         // Pivot calculation
-        const pivot = (high + low + close) / 3;
+        const pivot = (adjustedHigh + adjustedLow + close) / 3;
         
         // R1 and S1
-        const r1 = (2 * pivot) - low;
-        const s1 = (2 * pivot) - high;
+        const r1 = (2 * pivot) - adjustedLow;
+        const s1 = (2 * pivot) - adjustedHigh;
         
-        // Range
-        const range = r1 - s1;
+        // Fix 1: Use absolute range
+        const range = Math.abs(r1 - s1);
         
         // Calculate all levels
         this.timeframes[timeframe].levels = {
