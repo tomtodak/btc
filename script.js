@@ -1387,7 +1387,11 @@ function updateConverterTASuggestion() {
     // Update combined TA display
     const combinedEl = document.getElementById('converter-ta-combined');
     if (combinedEl) {
-        combinedEl.innerHTML = `<div class='converter-ta-suggestion-row'><div class='converter-ta-label'>Combined TA</div><div class='converter-ta-value ${combinedClassName}'>${combinedTA}</div></div>`;
+        const combinedValueEl = combinedEl.querySelector('.combined-ta-value');
+        if (combinedValueEl) {
+            combinedValueEl.textContent = combinedTA;
+            combinedValueEl.style.color = combinedTA === 'BUY' ? '#16c784' : (combinedTA === 'SELL' || combinedTA === 'LOCK PROFIT') ? '#ff4b4b' : '#ffffff';
+        }
     }
 }
 // Call on load and whenever BTC input or price changes
