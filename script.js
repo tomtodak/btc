@@ -1293,7 +1293,7 @@ if (btcInput) {
 function updateConverterTASuggestion() {
     const timeframes = ['daily', 'weekly', 'monthly', 'yearly'];
     const labels = { daily: 'Daily', weekly: 'Weekly', monthly: 'Monthly', yearly: 'Yearly' };
-    const weights = { yearly: 0.4, monthly: 0.3, weekly: 0.15, daily: 0.15 }; // Weighted voting
+    const weights = { yearly: 0.45, monthly: 0.35, weekly: 0.07, daily: 0.13 }; // Weighted voting
     
     let totalScore = 0;
     let totalWeight = 0;
