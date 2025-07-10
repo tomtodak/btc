@@ -611,13 +611,41 @@ class MultiTimeframeBTCCalculator {
                     hvSuggestion = 'HOLD';
                 }
 
-                // Combine TA logic
-                const signals = [srSuggestion, vtSuggestion, hvSuggestion];
-                const buyCount = signals.filter(s => s.includes('BUY')).length;
-                const sellCount = signals.filter(s => s.includes('SELL')).length;
-                if (buyCount >= 2) taSuggestion = 'BUY';
-                else if (sellCount >= 2) taSuggestion = 'SELL';
-                else taSuggestion = 'HOLD';
+                // Weighted TA logic (SR: 45%, HV: 35%, VT: 20%)
+                const weights = { SR: 0.45, HV: 0.35, VT: 0.20 };
+                let totalScore = 0;
+                let totalWeight = 0;
+                
+                // Calculate weighted score for each signal
+                const signals = [
+                    { type: 'SR', suggestion: srSuggestion, weight: weights.SR },
+                    { type: 'HV', suggestion: hvSuggestion, weight: weights.HV },
+                    { type: 'VT', suggestion: vtSuggestion, weight: weights.VT }
+                ];
+                
+                signals.forEach(signal => {
+                    let score = 0;
+                    if (signal.suggestion === 'BUY') score = 1;
+                    else if (signal.suggestion === 'SELL' || signal.suggestion === 'LOCK PROFIT') score = -1;
+                    else score = 0;
+                    
+                    totalScore += score * signal.weight;
+                    totalWeight += signal.weight;
+                });
+                
+                // Determine final TA suggestion
+                if (totalWeight > 0) {
+                    const averageScore = totalScore / totalWeight;
+                    if (averageScore >= 0.3) {
+                        taSuggestion = 'BUY';
+                    } else if (averageScore <= -0.3) {
+                        taSuggestion = 'SELL';
+                    } else {
+                        taSuggestion = 'HOLD';
+                    }
+                } else {
+                    taSuggestion = 'HOLD';
+                }
 
                 // Next target/support untuk TA (guna formatPrice)
                 if (taSuggestion === 'HOLD' || taSuggestion === 'CAUTION') {
