@@ -87,26 +87,31 @@ class MultiTimeframeBTCCalculator {
             const klinesResponse = await fetch(`https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=${klineInterval}&startTime=${startDate.getTime()}&endTime=${endDate.getTime()}&limit=${klineLimit}`);
             const klinesData = await klinesResponse.json();
             
-            // Get trades dalam tempoh tersebut - increase limit untuk dapat lebih banyak data
-            const tradesResponse = await fetch('https://api.binance.com/api/v3/trades?symbol=BTCUSDT&limit=2000');
-            const tradesData = await tradesResponse.json();
+            // Get CoinGecko volume data untuk tempoh yang betul
+            const daysToFetch = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24));
+            const coinGeckoResponse = await fetch(`https://api.coingecko.com/api/v3/coins/bitcoin/market_chart?vs_currency=usd&days=${daysToFetch}&interval=daily`);
+            const coinGeckoData = await coinGeckoResponse.json();
             
-            // Filter trades untuk tempoh yang betul
-            const timeframeTrades = tradesData.filter(trade => {
-                const tradeTime = new Date(trade.time);
-                return tradeTime >= startDate && tradeTime <= endDate;
+            // Filter data untuk tempoh yang betul
+            const timeframeData = coinGeckoData.prices.filter((priceData, index) => {
+                const timestamp = priceData[0];
+                const date = new Date(timestamp);
+                return date >= startDate && date <= endDate;
             });
             
-            // Calculate volume by price
+            // Calculate volume by price using CoinGecko data
             const priceVolume = {};
-            timeframeTrades.forEach(trade => {
-                const price = parseFloat(trade.price);
-                const quantity = parseFloat(trade.qty);
+            timeframeData.forEach((priceData, index) => {
+                const price = priceData[1];
+                const volume = coinGeckoData.total_volumes[index] ? coinGeckoData.total_volumes[index][1] : 0;
                 
-                if (priceVolume[price]) {
-                    priceVolume[price] += quantity;
+                // Round price to nearest dollar for grouping
+                const roundedPrice = Math.round(price);
+                
+                if (priceVolume[roundedPrice]) {
+                    priceVolume[roundedPrice] += volume;
                 } else {
-                    priceVolume[price] = quantity;
+                    priceVolume[roundedPrice] = volume;
                 }
             });
             
@@ -162,7 +167,7 @@ class MultiTimeframeBTCCalculator {
                 startDate: startDate,
                 endDate: endDate,
                 volumeData: priceVolume,
-                trades: timeframeTrades // Simpan trades untuk chart
+                coinGeckoData: timeframeData // Simpan CoinGecko data untuk chart
             };
             
             this.updateDataInfo(timeframe);
@@ -309,10 +314,10 @@ class MultiTimeframeBTCCalculator {
         if (!btcChart) return;
         
         const data = this.timeframes[timeframe];
-        if (!data || !data.trades) return;
+        if (!data || !data.coinGeckoData) return;
         
-        // Generate candlestick data from trades
-        const candlestickData = btcChart.generateCandlestickData(data.trades, timeframe);
+        // Generate candlestick data from CoinGecko data
+        const candlestickData = btcChart.generateCandlestickData(data.coinGeckoData, timeframe);
         
         // Get support and resistance levels
         const supportLevels = [

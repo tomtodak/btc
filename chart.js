@@ -380,6 +380,27 @@ class BTCCandlestickChart {
         this.drawSupportResistanceLines();
         this.drawCurrentPriceLine();
     }
+
+    generateCandlestickData(data, timeframe) {
+        if (!data || data.length === 0) return [];
+        
+        // Convert CoinGecko data to candlestick format
+        const candlesticks = data.map(priceData => {
+            const timestamp = priceData[0];
+            const price = priceData[1];
+            
+            return {
+                time: timestamp,
+                open: price,
+                high: price,
+                low: price,
+                close: price,
+                volume: 0 // CoinGecko doesn't provide individual trade volume
+            };
+        });
+        
+        return candlesticks;
+    }
 }
 
 let btcChart = null;
