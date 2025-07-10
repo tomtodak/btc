@@ -105,32 +105,53 @@ class MultiTimeframeBTCCalculator {
             const klinesData = await klinesResponse.json();
             
             // Get CoinGecko volume data untuk tempoh yang betul
-            const daysToFetch = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24));
-            const coinGeckoResponse = await fetch(`https://api.coingecko.com/api/v3/coins/bitcoin/market_chart?vs_currency=usd&days=${daysToFetch}&interval=daily`);
-            const coinGeckoData = await coinGeckoResponse.json();
-            
-            // Filter data untuk tempoh yang betul
-            const timeframeData = coinGeckoData.prices.filter((priceData, index) => {
-                const timestamp = priceData[0];
-                const date = new Date(timestamp);
-                return date >= startDate && date <= endDate;
-            });
+            // Get CoinGecko volume data untuk tempoh yang betul
+            // Fix 1: Improve CoinGecko API call dengan better error handling
+            let coinGeckoData = null;
+            let timeframeData = [];
+            try {
+                const daysToFetch = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24));
+                // Limit days untuk avoid API issues
+                const safeDays = Math.min(daysToFetch, 365);
+                const coinGeckoResponse = await fetch(`https://api.coingecko.com/api/v3/coins/bitcoin/market_chart?vs_currency=usd&days=${safeDays}&interval=daily`);
+                coinGeckoData = await coinGeckoResponse.json();
+                
+                // Fix 2: Better data filtering
+                if (coinGeckoData && coinGeckoData.prices) {
+                    timeframeData = coinGeckoData.prices.filter((priceData, index) => {
+                        const timestamp = priceData[0];
+                        const date = new Date(timestamp);
+                        return date >= startDate && date <= endDate;
+                    });
+                    
+                    // If no filtered data, use all available data
+                    if (timeframeData.length === 0 && coinGeckoData.prices.length > 0) {
+                        timeframeData = coinGeckoData.prices;
+                        console.log(`Using all available CoinGecko data for ${timeframe}`);
+                    }
+                }
+            } catch (error) {
+                console.log(`CoinGecko API failed for ${timeframe}:`, error);
+                coinGeckoData = null;
+            }
             
             // Calculate volume by price using CoinGecko data
             const priceVolume = {};
-            timeframeData.forEach((priceData, index) => {
-                const price = priceData[1];
-                const volume = coinGeckoData.total_volumes[index] ? coinGeckoData.total_volumes[index][1] : 0;
-                
-                // Round price to nearest dollar for grouping
-                const roundedPrice = Math.round(price);
-                
-                if (priceVolume[roundedPrice]) {
-                    priceVolume[roundedPrice] += volume;
-                } else {
-                    priceVolume[roundedPrice] = volume;
-                }
-            });
+            if (timeframeData.length > 0) {
+                timeframeData.forEach((priceData, index) => {
+                    const price = priceData[1];
+                    const volume = coinGeckoData && coinGeckoData.total_volumes && coinGeckoData.total_volumes[index] ? coinGeckoData.total_volumes[index][1] : 0;
+                    
+                    // Round price to nearest dollar for grouping
+                    const roundedPrice = Math.round(price);
+                    
+                    if (priceVolume[roundedPrice]) {
+                        priceVolume[roundedPrice] += volume;
+                    } else {
+                        priceVolume[roundedPrice] = volume;
+                    }
+                });
+            }
             
             // Find highest and lowest volume prices
             let maxVolume = 0;
@@ -150,25 +171,38 @@ class MultiTimeframeBTCCalculator {
                 }
             });
             
-            // Fallback: Jika volume data tidak cukup, gunakan klines data
+            // Fix 3: Improve fallback logic
             if (maxVolumePrice === 0 || minVolumePrice === 0) {
                 console.log(`Using klines data for ${timeframe} - volume data insufficient`);
                 
                 let highPrice = 0;
                 let lowPrice = Infinity;
                 
-                klinesData.forEach(kline => {
-                    const high = parseFloat(kline[2]);
-                    const low = parseFloat(kline[3]);
+                if (klinesData && klinesData.length > 0) {
+                    klinesData.forEach(kline => {
+                        const high = parseFloat(kline[2]);
+                        const low = parseFloat(kline[3]);
+                        
+                        if (high > highPrice) highPrice = high;
+                        if (low < lowPrice) lowPrice = low;
+                    });
                     
-                    if (high > highPrice) highPrice = high;
-                    if (low < lowPrice) lowPrice = low;
-                });
-                
-                maxVolumePrice = highPrice;
-                minVolumePrice = lowPrice;
+                    maxVolumePrice = highPrice;
+                    minVolumePrice = lowPrice;
+                } else {
+                    // If klines also fail, use current price fallback
+                    console.log(`Using current price fallback for ${timeframe} - no klines data`);
+                    maxVolumePrice = currentClose * 1.05;
+                    minVolumePrice = currentClose * 0.95;
+                }
             }
             
+            // Final fallback: Gunakan current price ± 5% jika masih zero
+            if (maxVolumePrice === 0 || minVolumePrice === 0) {
+                console.log(`Using current price fallback for ${timeframe}`);
+                maxVolumePrice = currentClose * 1.05;
+                minVolumePrice = currentClose * 0.95;
+            }            
             // Final fallback: Gunakan current price ± 5% jika masih zero
             if (maxVolumePrice === 0 || minVolumePrice === 0) {
                 console.log(`Using current price fallback for ${timeframe}`);
