@@ -648,8 +648,22 @@ class MultiTimeframeBTCCalculator {
                     <div style='${mostSoldStyle}'>Most Sold: <b>${window.formatPrice ? window.formatPrice(data.low) : data.low}</b></div>
                 `;
             }
-            // Papar TA sahaja di bold putih
-            document.getElementById(`summary-${tf}-suggestion`).textContent = taSuggestion;
+            // Papar TA dengan color coding
+            const taElement = document.getElementById(`summary-${tf}-suggestion`);
+            taElement.textContent = taSuggestion;
+            
+            // Add color coding based on TA suggestion
+            if (taSuggestion === 'BUY') {
+                taElement.style.color = '#16c784'; // Green
+                taElement.style.fontWeight = 'bold';
+            } else if (taSuggestion === 'SELL' || taSuggestion === 'LOCK PROFIT') {
+                taElement.style.color = '#ff4b4b'; // Red
+                taElement.style.fontWeight = 'bold';
+            } else {
+                taElement.style.color = '#ffffff'; // White (default)
+                taElement.style.fontWeight = 'normal';
+            }
+            
             // Papar next target/support TA di bawah, kemudian SR & VT & HV, kemudian info harga
             document.getElementById(`summary-${tf}-info`).innerHTML = info;
         });
