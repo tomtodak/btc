@@ -344,6 +344,21 @@ body {
     border-radius: 10px;
     margin-top: 20px;
     backdrop-filter: blur(10px);
+    overflow-x: auto;
+}
+
+@media (max-width: 768px) {
+    .comparison-table {
+        padding: 15px;
+        margin-top: 15px;
+    }
+}
+
+@media (max-width: 480px) {
+    .comparison-table {
+        padding: 10px;
+        margin-top: 10px;
+    }
 }
 
 .comparison-table table {
@@ -356,6 +371,26 @@ body {
     padding: 10px;
     text-align: center !important;
     border-bottom: 1px solid rgba(255,255,255,0.2);
+    white-space: nowrap;
+    min-width: 80px;
+}
+
+@media (max-width: 768px) {
+    .comparison-table th,
+    .comparison-table td {
+        padding: 8px 6px;
+        font-size: 0.9em;
+        min-width: 60px;
+    }
+}
+
+@media (max-width: 480px) {
+    .comparison-table th,
+    .comparison-table td {
+        padding: 6px 4px;
+        font-size: 0.8em;
+        min-width: 50px;
+    }
 }
 
 .comparison-table th {
@@ -365,9 +400,33 @@ body {
     text-align: center !important;
 }
 
+@media (max-width: 768px) {
+    .comparison-table th {
+        font-size: 0.85em;
+    }
+}
+
+@media (max-width: 480px) {
+    .comparison-table th {
+        font-size: 0.75em;
+    }
+}
+
 .comparison-table td {
     color: #f3f3f3;
     text-align: center !important;
+}
+
+@media (max-width: 768px) {
+    .comparison-table td {
+        font-size: 0.85em;
+    }
+}
+
+@media (max-width: 480px) {
+    .comparison-table td {
+        font-size: 0.75em;
+    }
 }
 
 .period-info {
