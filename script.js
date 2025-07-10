@@ -171,6 +171,20 @@ class MultiTimeframeBTCCalculator {
                 }
             });
             
+            // Special fix for daily: if only 1 data point from CoinGecko, use klines high/low
+            if (timeframe === 'daily' && timeframeData.length <= 1 && klinesData && klinesData.length > 0) {
+                let highPrice = 0;
+                let lowPrice = Infinity;
+                klinesData.forEach(kline => {
+                    const high = parseFloat(kline[2]);
+                    const low = parseFloat(kline[3]);
+                    if (high > highPrice) highPrice = high;
+                    if (low < lowPrice) lowPrice = low;
+                });
+                maxVolumePrice = highPrice;
+                minVolumePrice = lowPrice;
+            }
+            
             // Fix 3: Improve fallback logic
             if (maxVolumePrice === 0 || minVolumePrice === 0) {
                 console.log(`Using klines data for ${timeframe} - volume data insufficient`);
