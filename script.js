@@ -1293,13 +1293,20 @@ if (btcInput) {
 function updateConverterTASuggestion() {
     const timeframes = ['daily', 'weekly', 'monthly', 'yearly'];
     const labels = { daily: 'Daily', weekly: 'Weekly', monthly: 'Monthly', yearly: 'Yearly' };
+    const weights = { yearly: 0.4, monthly: 0.3, weekly: 0.15, daily: 0.15 }; // Weighted voting
+    
+    let totalScore = 0;
+    let totalWeight = 0;
+    
     timeframes.forEach(tf => {
         const data = window.calculator?.timeframes?.[tf];
         const el = document.getElementById(`converter-ta-${tf}`);
         if (!data || !data.levels || !el) return;
+        
         const levels = data.levels;
         const current = window.calculator?.currentPrice || 0;
         let srSuggestion = '-', vtSuggestion = '-', hvSuggestion = '-', taSuggestion = '-';
+        
         // SR suggestion
         if (current <= levels.s1 * 1.01) {
             srSuggestion = 'BUY';
@@ -1308,6 +1315,7 @@ function updateConverterTASuggestion() {
         } else {
             srSuggestion = 'HOLD';
         }
+        
         // VT suggestion (ikut summary logic)
         if (Math.abs(current - data.high) < Math.abs(current - data.low)) {
             if (Math.abs(current - data.high) < 1) {
@@ -1324,6 +1332,7 @@ function updateConverterTASuggestion() {
                 vtSuggestion = 'BUY';
             }
         }
+        
         // HV suggestion (ikut summary logic)
         let highVolumeBuy = data.volumeData?.[data.high]?.buy || 0;
         let highVolumeSell = data.volumeData?.[data.low]?.sell || 0;
@@ -1334,6 +1343,7 @@ function updateConverterTASuggestion() {
         } else {
             hvSuggestion = 'HOLD';
         }
+        
         // Combine TA logic (majority)
         const signals = [srSuggestion, vtSuggestion, hvSuggestion];
         const buyCount = signals.filter(s => s.includes('BUY')).length;
@@ -1341,12 +1351,44 @@ function updateConverterTASuggestion() {
         if (buyCount >= 2) taSuggestion = 'BUY';
         else if (sellCount >= 2) taSuggestion = 'SELL';
         else taSuggestion = 'HOLD';
+        
+        // Calculate weighted score for combined TA
+        let score = 0;
+        if (taSuggestion === 'BUY') score = 1;
+        else if (taSuggestion === 'SELL' || taSuggestion === 'LOCK PROFIT') score = -1;
+        else score = 0;
+        
+        totalScore += score * weights[tf];
+        totalWeight += weights[tf];
+        
         let className = '';
         if (taSuggestion === 'BUY') className = 'converter-ta-buy';
         else if (taSuggestion === 'SELL') className = 'converter-ta-sell';
         else className = 'converter-ta-hold';
+        
         el.innerHTML = `<div class='converter-ta-suggestion-row'><div class='converter-ta-label'>${labels[tf]}</div><div class='converter-ta-value ${className}'>${taSuggestion}</div></div>`;
     });
+    
+    // Calculate combined TA suggestion
+    let combinedTA = 'HOLD';
+    let combinedClassName = 'converter-ta-hold';
+    
+    if (totalWeight > 0) {
+        const averageScore = totalScore / totalWeight;
+        if (averageScore >= 0.3) {
+            combinedTA = 'BUY';
+            combinedClassName = 'converter-ta-buy';
+        } else if (averageScore <= -0.3) {
+            combinedTA = 'SELL';
+            combinedClassName = 'converter-ta-sell';
+        }
+    }
+    
+    // Update combined TA display
+    const combinedEl = document.getElementById('converter-ta-combined');
+    if (combinedEl) {
+        combinedEl.innerHTML = `<div class='converter-ta-suggestion-row'><div class='converter-ta-label'>Combined TA</div><div class='converter-ta-value ${combinedClassName}'>${combinedTA}</div></div>`;
+    }
 }
 // Call on load and whenever BTC input or price changes
 if (typeof window !== 'undefined') {
