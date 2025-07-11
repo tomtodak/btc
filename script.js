@@ -267,18 +267,22 @@ class MultiTimeframeBTCCalculator {
         const r1 = (2 * pivot) - adjustedLow;
         const s1 = (2 * pivot) - adjustedHigh;
         
-        // Fix 1: Use absolute range
+        // R2 and S2 (correct formula)
+        const r2 = pivot + (adjustedHigh - adjustedLow);
+        const s2 = pivot - (adjustedHigh - adjustedLow);
+        
+        // R3, R4, S3, S4 (using range from R1-S1)
         const range = Math.abs(r1 - s1);
         
         // Calculate all levels
         this.timeframes[timeframe].levels = {
             r4: pivot + (range * 3),
             r3: pivot + (range * 2),
-            r2: pivot + range,
+            r2: r2,
             r1: r1,
             pivot: pivot,
             s1: s1,
-            s2: pivot - range,
+            s2: s2,
             s3: pivot - (range * 2),
             s4: pivot - (range * 3)
         };
@@ -648,15 +652,33 @@ class MultiTimeframeBTCCalculator {
                 }
 
                 // Next target/support untuk TA (guna formatPrice)
+                // Logic dinamik: cari resistance/support terdekat dari current price
+                const resistanceLevels = ['r1', 'r2', 'r3', 'r4'];
+                const supportLevels = ['s1', 's2', 's3', 's4'];
+                let nextTargetLevel = null, nextSupportLevel = null;
+                for (let i = 0; i < resistanceLevels.length; i++) {
+                    const lvl = levels[resistanceLevels[i]];
+                    if (lvl > current) {
+                        nextTargetLevel = lvl;
+                        break;
+                    }
+                }
+                for (let i = 0; i < supportLevels.length; i++) {
+                    const lvl = levels[supportLevels[i]];
+                    if (lvl < current) {
+                        nextSupportLevel = lvl;
+                        break;
+                    }
+                }
                 if (taSuggestion === 'HOLD' || taSuggestion === 'CAUTION') {
                     taTarget = `
-                        <div class='next-target' style='margin-bottom:0;'>Next Target: R1 <b>${window.formatPrice ? window.formatPrice(levels.r1) : levels.r1}</b></div>
-                        <div class='next-target last-next-target'>Next Support: S1 <b>${window.formatPrice ? window.formatPrice(levels.s1) : levels.s1}</b></div>
+                        <div class='next-target' style='margin-bottom:0;'>Next Target: <b>${window.formatPrice ? window.formatPrice(nextTargetLevel) : (nextTargetLevel ?? '-')}</b></div>
+                        <div class='next-target last-next-target'>Next Support: <b>${window.formatPrice ? window.formatPrice(nextSupportLevel) : (nextSupportLevel ?? '-')}</b></div>
                     `;
                 } else if (taSuggestion.includes('BUY')) {
-                    taTarget = `<div class='next-target last-next-target'>Next Target: R1 <b>${window.formatPrice ? window.formatPrice(levels.r1) : levels.r1}</b></div>`;
+                    taTarget = `<div class='next-target last-next-target'>Next Target: <b>${window.formatPrice ? window.formatPrice(nextTargetLevel) : (nextTargetLevel ?? '-')}</b></div>`;
                 } else if (taSuggestion.includes('SELL') || taSuggestion === 'LOCK PROFIT') {
-                    taTarget = `<div class='next-target last-next-target'>Next Support: S1 <b>${window.formatPrice ? window.formatPrice(levels.s1) : levels.s1}</b></div>`;
+                    taTarget = `<div class='next-target last-next-target'>Next Support: <b>${window.formatPrice ? window.formatPrice(nextSupportLevel) : (nextSupportLevel ?? '-')}</b></div>`;
                 }
 
                 // Determine which has more volume
@@ -1074,15 +1096,33 @@ function updateSummaryTabCurrency() {
             else taSuggestion = 'HOLD';
 
             // Next target/support untuk TA (guna formatPrice)
+            // Logic dinamik: cari resistance/support terdekat dari current price
+            const resistanceLevels = ['r1', 'r2', 'r3', 'r4'];
+            const supportLevels = ['s1', 's2', 's3', 's4'];
+            let nextTargetLevel = null, nextSupportLevel = null;
+            for (let i = 0; i < resistanceLevels.length; i++) {
+                const lvl = levels[resistanceLevels[i]];
+                if (lvl > current) {
+                    nextTargetLevel = lvl;
+                    break;
+                }
+            }
+            for (let i = 0; i < supportLevels.length; i++) {
+                const lvl = levels[supportLevels[i]];
+                if (lvl < current) {
+                    nextSupportLevel = lvl;
+                    break;
+                }
+            }
             if (taSuggestion === 'HOLD' || taSuggestion === 'CAUTION') {
                 taTarget = `
-                    <div class='next-target' style='margin-bottom:0;'>Next Target: R1 <b>${window.formatPrice ? window.formatPrice(levels.r1) : levels.r1}</b></div>
-                    <div class='next-target last-next-target'>Next Support: S1 <b>${window.formatPrice ? window.formatPrice(levels.s1) : levels.s1}</b></div>
+                    <div class='next-target' style='margin-bottom:0;'>Next Target: <b>${window.formatPrice ? window.formatPrice(nextTargetLevel) : (nextTargetLevel ?? '-')}</b></div>
+                    <div class='next-target last-next-target'>Next Support: <b>${window.formatPrice ? window.formatPrice(nextSupportLevel) : (nextSupportLevel ?? '-')}</b></div>
                 `;
             } else if (taSuggestion.includes('BUY')) {
-                taTarget = `<div class='next-target last-next-target'>Next Target: R1 <b>${window.formatPrice ? window.formatPrice(levels.r1) : levels.r1}</b></div>`;
+                taTarget = `<div class='next-target last-next-target'>Next Target: <b>${window.formatPrice ? window.formatPrice(nextTargetLevel) : (nextTargetLevel ?? '-')}</b></div>`;
             } else if (taSuggestion.includes('SELL') || taSuggestion === 'LOCK PROFIT') {
-                taTarget = `<div class='next-target last-next-target'>Next Support: S1 <b>${window.formatPrice ? window.formatPrice(levels.s1) : levels.s1}</b></div>`;
+                taTarget = `<div class='next-target last-next-target'>Next Support: <b>${window.formatPrice ? window.formatPrice(nextSupportLevel) : (nextSupportLevel ?? '-')}</b></div>`;
             }
 
             // Determine which has more volume
@@ -1321,7 +1361,7 @@ if (btcInput) {
 function updateConverterTASuggestion() {
     const timeframes = ['daily', 'weekly', 'monthly', 'yearly'];
     const labels = { daily: 'Daily', weekly: 'Weekly', monthly: 'Monthly', yearly: 'Yearly' };
-    const weights = { yearly: 0.45, monthly: 0.35, weekly: 0.07, daily: 0.13 }; // Weighted voting
+    const weights = { monthly: 0.45, yearly: 0.18, daily: 0.30, weekly: 0.07 }; // Weighted voting
     
     let totalScore = 0;
     let totalWeight = 0;
@@ -1466,9 +1506,10 @@ function updateCalculatorTab() {
 
     // Get current price (USD base)
     const currentPriceUSD = window.calculator?.currentPrice || 0;
-    // Get monthly S/R levels (USD base)
-    const levels = window.calculator?.timeframes?.monthly?.levels || {};
-    const data = window.calculator?.timeframes?.monthly || {};
+    // Get S/R levels ikut timeframe yang sedang dipilih
+    const activeTimeframe = window.calculator?.currentTimeframe || 'monthly';
+    const levels = window.calculator?.timeframes?.[activeTimeframe]?.levels || {};
+    const data = window.calculator?.timeframes?.[activeTimeframe] || {};
 
     // For each currency card
     const currencies = [
@@ -1483,6 +1524,8 @@ function updateCalculatorTab() {
         const entryPriceCur = getPrice(entryPrice, cur.symbol);
         const r1 = getPrice(levels.r1 || 0, cur.symbol);
         const s1 = getPrice(levels.s1 || 0, cur.symbol);
+        const r2 = getPrice(levels.r2 || 0, cur.symbol);
+        const s2 = getPrice(levels.s2 || 0, cur.symbol);
         const high = getPrice(data.high || 0, cur.symbol);
         const low = getPrice(data.low || 0, cur.symbol);
         // Output elements
@@ -1492,11 +1535,34 @@ function updateCalculatorTab() {
         const totalCost = entryPriceCur * btcAmount;
         const currentValue = currentPrice * sellAmount;
         const profitLoss = (currentPrice - entryPriceCur) * sellAmount;
+        // === Logic dinamik untuk next target/support ===
+        // Cari next resistance (target) yang lebih tinggi dari current price, dan support terdekat di bawah current price
+        const resistanceLevels = ['r1', 'r2', 'r3', 'r4'];
+        const supportLevels = ['s1', 's2', 's3', 's4'];
+        let nextTargetLevel = null, nextSupportLevel = null;
+        // Cari next target (resistance terdekat di atas current price)
+        for (let i = 0; i < resistanceLevels.length; i++) {
+            const lvl = getPrice(levels[resistanceLevels[i]] || 0, cur.symbol);
+            if (lvl > currentPrice) {
+                nextTargetLevel = lvl;
+                break;
+            }
+        }
+        // Jika tiada resistance di atas, next target = null
+        // Cari next support (support terdekat di bawah current price)
+        for (let i = 0; i < supportLevels.length; i++) {
+            const lvl = getPrice(levels[supportLevels[i]] || 0, cur.symbol);
+            if (lvl < currentPrice) {
+                nextSupportLevel = lvl;
+                break;
+            }
+        }
+        // Jika tiada support di bawah, next support = null
         // === FIX: Calculate gain and risk for balance BTC ===
         let gain = null, risk = null;
         if (balanceBtc > 0) {
-            gain = (r1 - currentPrice) * balanceBtc;
-            risk = (currentPrice - s1) * balanceBtc;
+            gain = nextTargetLevel !== null ? (nextTargetLevel - currentPrice) * balanceBtc : null;
+            risk = nextSupportLevel !== null ? (currentPrice - nextSupportLevel) * balanceBtc : null;
         }
         // Main profit/loss output
         let profitText = '';
@@ -1515,8 +1581,8 @@ function updateCalculatorTab() {
         let srHtml = '';
         srHtml += '<ul class="sr-target-list-info">';
         srHtml += `<li><span class='sr-label'>Current Price:</span> <span class='sr-value'>${format(currentPrice, cur.symbol)}</span></li>`;
-        srHtml += `<li><span class='sr-label'>Next Target:</span> <span class='sr-value'>${format(r1, cur.symbol)}</span></li>`;
-        srHtml += `<li><span class='sr-label'>Next Support:</span> <span class='sr-value'>${format(s1, cur.symbol)}</span></li>`;
+        srHtml += `<li><span class='sr-label'>Next Target:</span> <span class='sr-value'>${nextTargetLevel !== null ? format(nextTargetLevel, cur.symbol) : '-'}</span></li>`;
+        srHtml += `<li><span class='sr-label'>Next Support:</span> <span class='sr-value'>${nextSupportLevel !== null ? format(nextSupportLevel, cur.symbol) : '-'}</span></li>`;
         // Calculate average most bought/sold from summary timeframes (always in USD, then convert)
         const tfs = ['daily', 'weekly', 'monthly', 'yearly'];
         let sumHighUSD = 0, sumLowUSD = 0, countHigh = 0, countLow = 0;
@@ -1552,16 +1618,45 @@ function updateCalculatorTab() {
         srHtml += `<li><span class='sr-label'>Current Value:</span> <span class='sr-value ${currentValueClass}'>${format(currentValueBalance, cur.symbol)}</span></li>`;
         if (gain !== null) srHtml += `<li><span class='sr-label'>Mid/Short Reward Value:</span> <span class='sr-value sr-gain'>${gain >= 0 ? '+' : ''}${format(Math.abs(gain), cur.symbol)}</span></li>`;
         if (risk !== null) srHtml += `<li><span class='sr-label'>Mid/Short Risk Value:</span> <span class='sr-value sr-risk'>-${format(Math.abs(risk), cur.symbol)}</span></li>`;
-        // === Long Term Reward/Risk Value (Yearly S/R) ===
+        // === Long Term Reward/Risk Value (Yearly S/R dengan logic yang sama) ===
         const yearlyLevels = window.calculator?.timeframes?.yearly?.levels;
         if (
             balanceBtc > 0 &&
             yearlyLevels &&
             typeof yearlyLevels.r1 === 'number' && !isNaN(yearlyLevels.r1) &&
-            typeof yearlyLevels.s1 === 'number' && !isNaN(yearlyLevels.s1)
+            typeof yearlyLevels.s1 === 'number' && !isNaN(yearlyLevels.s1) &&
+            typeof yearlyLevels.r2 === 'number' && !isNaN(yearlyLevels.r2) &&
+            typeof yearlyLevels.s2 === 'number' && !isNaN(yearlyLevels.s2)
         ) {
-            const longGain = (yearlyLevels.r1 - currentPrice) * balanceBtc;
-            const longRisk = (currentPrice - yearlyLevels.s1) * balanceBtc;
+            // Logic untuk yearly levels
+            let yearlyNextTarget, yearlyNextSupport, yearlyNextTargetLevel, yearlyNextSupportLevel;
+            const yearlyR1 = getPrice(yearlyLevels.r1, cur.symbol);
+            const yearlyS1 = getPrice(yearlyLevels.s1, cur.symbol);
+            const yearlyR2 = getPrice(yearlyLevels.r2, cur.symbol);
+            const yearlyS2 = getPrice(yearlyLevels.s2, cur.symbol);
+            
+            if (currentPrice > yearlyR1) {
+                // Current price sudah melebihi yearly R1, target seterusnya adalah yearly R2
+                yearlyNextTarget = 'R2';
+                yearlyNextTargetLevel = yearlyR2;
+                yearlyNextSupport = 'R1';
+                yearlyNextSupportLevel = yearlyR1;
+            } else if (currentPrice < yearlyS1) {
+                // Current price sudah di bawah yearly S1, support seterusnya adalah yearly S2
+                yearlyNextTarget = 'R1';
+                yearlyNextTargetLevel = yearlyR1;
+                yearlyNextSupport = 'S2';
+                yearlyNextSupportLevel = yearlyS2;
+            } else {
+                // Current price berada antara yearly S1 dan R1, target seterusnya adalah yearly R1
+                yearlyNextTarget = 'R1';
+                yearlyNextTargetLevel = yearlyR1;
+                yearlyNextSupport = 'S1';
+                yearlyNextSupportLevel = yearlyS1;
+            }
+            
+            const longGain = (yearlyNextTargetLevel - currentPrice) * balanceBtc;
+            const longRisk = (currentPrice - yearlyNextSupportLevel) * balanceBtc;
             srHtml += `<li><span class='sr-label'>Long Term Reward Value:</span> <span class='sr-value sr-gain'>+${format(Math.abs(longGain), cur.symbol)}</span></li>`;
             srHtml += `<li><span class='sr-label'>Long Term Risk Value:</span> <span class='sr-value sr-risk'>-${format(Math.abs(longRisk), cur.symbol)}</span></li>`;
         } else {
