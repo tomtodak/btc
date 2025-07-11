@@ -1221,11 +1221,30 @@ function updateCurrencyButtonStates() {
 
 // --- S/R Target Price in Converter Cards ---
 function renderSRTargetInConverter() {
-    // Use monthly timeframe for S/R target (was daily)
-    const tf = 'monthly';
-    const data = window.calculator?.timeframes?.[tf];
-    if (!data || !data.levels) return;
-    const levels = data.levels;
+    // Use average S/R levels from all timeframes (like calculator tab)
+    const timeframes = ['daily', 'weekly', 'monthly', 'yearly'];
+    let avgLevels = { s4: 0, s3: 0, s2: 0, s1: 0, pivot: 0, r1: 0, r2: 0, r3: 0, r4: 0 };
+    let validLevels = { s4: 0, s3: 0, s2: 0, s1: 0, pivot: 0, r1: 0, r2: 0, r3: 0, r4: 0 };
+    
+    // Kumpul semua S/R levels dari semua timeframes
+    timeframes.forEach(tf => {
+        const tfLevels = window.calculator?.timeframes?.[tf]?.levels || {};
+        if (tfLevels.s4 && !isNaN(tfLevels.s4)) { avgLevels.s4 += tfLevels.s4; validLevels.s4++; }
+        if (tfLevels.s3 && !isNaN(tfLevels.s3)) { avgLevels.s3 += tfLevels.s3; validLevels.s3++; }
+        if (tfLevels.s2 && !isNaN(tfLevels.s2)) { avgLevels.s2 += tfLevels.s2; validLevels.s2++; }
+        if (tfLevels.s1 && !isNaN(tfLevels.s1)) { avgLevels.s1 += tfLevels.s1; validLevels.s1++; }
+        if (tfLevels.pivot && !isNaN(tfLevels.pivot)) { avgLevels.pivot += tfLevels.pivot; validLevels.pivot++; }
+        if (tfLevels.r1 && !isNaN(tfLevels.r1)) { avgLevels.r1 += tfLevels.r1; validLevels.r1++; }
+        if (tfLevels.r2 && !isNaN(tfLevels.r2)) { avgLevels.r2 += tfLevels.r2; validLevels.r2++; }
+        if (tfLevels.r3 && !isNaN(tfLevels.r3)) { avgLevels.r3 += tfLevels.r3; validLevels.r3++; }
+        if (tfLevels.r4 && !isNaN(tfLevels.r4)) { avgLevels.r4 += tfLevels.r4; validLevels.r4++; }
+    });
+    
+    // Kira average untuk setiap level
+    Object.keys(avgLevels).forEach(key => {
+        avgLevels[key] = validLevels[key] > 0 ? avgLevels[key] / validLevels[key] : null;
+    });
+    
     const current = window.calculator?.currentPrice || 0;
     // Get BTC input value
     const btcInput = document.getElementById('conv-btc-main');
@@ -1234,19 +1253,19 @@ function renderSRTargetInConverter() {
     let srTargets = [];
     // Next Target & Next Support logic (from summary)
     let taSuggestion = '-';
-    if (current <= levels.s1 * 1.01) taSuggestion = 'BUY';
-    else if (current >= levels.r1 * 0.99) taSuggestion = 'SELL';
+    if (current <= avgLevels.s1 * 1.01) taSuggestion = 'BUY';
+    else if (current >= avgLevels.r1 * 0.99) taSuggestion = 'SELL';
     else taSuggestion = 'HOLD';
     
-    // Cari next target dan next support dinamik
+    // Cari next target dan next support dinamik berdasarkan average levels
     const resistanceLevels = ['r1', 'r2', 'r3', 'r4'];
     const supportLevels = ['s1', 's2', 's3', 's4'];
     let nextTargetLevel = null, nextSupportLevel = null;
     
     // Cari next target (resistance terdekat di atas current price)
     for (let i = 0; i < resistanceLevels.length; i++) {
-        const lvl = levels[resistanceLevels[i]];
-        if (lvl > current) {
+        const lvl = avgLevels[resistanceLevels[i]];
+        if (lvl && lvl > current) {
             nextTargetLevel = lvl;
             break;
         }
@@ -1254,8 +1273,8 @@ function renderSRTargetInConverter() {
     
     // Cari next support (support terdekat di bawah current price)
     for (let i = 0; i < supportLevels.length; i++) {
-        const lvl = levels[supportLevels[i]];
-        if (lvl < current) {
+        const lvl = avgLevels[supportLevels[i]];
+        if (lvl && lvl < current) {
             nextSupportLevel = lvl;
             break;
         }
@@ -1264,8 +1283,8 @@ function renderSRTargetInConverter() {
     // Jika tiada support di bawah, cari support seterusnya (S2, S3, S4)
     if (nextSupportLevel === null) {
         for (let i = 0; i < supportLevels.length; i++) {
-            const lvl = levels[supportLevels[i]];
-            if (lvl > 0) {
+            const lvl = avgLevels[supportLevels[i]];
+            if (lvl && lvl > 0) {
                 nextSupportLevel = lvl;
                 break;
             }
@@ -1273,12 +1292,12 @@ function renderSRTargetInConverter() {
     }
     
     if (taSuggestion === 'HOLD' || taSuggestion === 'CAUTION') {
-        srTargets.push({ label: 'Mid/Short Potential Gain', value: nextTargetLevel || levels.r1, multiply: true });
-        srTargets.push({ label: 'Mid/Short Potential Risk', value: nextSupportLevel || levels.s1, multiply: true });
+        srTargets.push({ label: 'Mid/Short Potential Gain', value: nextTargetLevel || avgLevels.r1, multiply: true });
+        srTargets.push({ label: 'Mid/Short Potential Risk', value: nextSupportLevel || avgLevels.s1, multiply: true });
     } else if (taSuggestion.includes('BUY')) {
-        srTargets.push({ label: 'Mid/Short Potential Gain', value: nextTargetLevel || levels.r1, multiply: true });
+        srTargets.push({ label: 'Mid/Short Potential Gain', value: nextTargetLevel || avgLevels.r1, multiply: true });
     } else if (taSuggestion.includes('SELL') || taSuggestion === 'LOCK PROFIT') {
-        srTargets.push({ label: 'Mid/Short Potential Risk', value: nextSupportLevel || levels.s1, multiply: true });
+        srTargets.push({ label: 'Mid/Short Potential Risk', value: nextSupportLevel || avgLevels.s1, multiply: true });
     }
     srTargets.push({ label: 'Current Price', value: current, multiply: false });
     // Calculate average most bought/sold from summary timeframes
@@ -1325,8 +1344,8 @@ function renderSRTargetInConverter() {
             } else {
                 // Jika next support lebih tinggi/sama dengan current price, cari support seterusnya
                 for (let i = 0; i < supportLevels.length; i++) {
-                    const lvl = levels[supportLevels[i]];
-                    if (lvl < current && lvl > 0) {
+                    const lvl = avgLevels[supportLevels[i]];
+                    if (lvl && lvl < current && lvl > 0) {
                         risk = (current - lvl) * btcAmount;
                         break;
                     }
@@ -1568,34 +1587,64 @@ function updateCalculatorTab() {
     const levels = window.calculator?.timeframes?.[activeTimeframe]?.levels || {};
     const data = window.calculator?.timeframes?.[activeTimeframe] || {};
 
-    // === Logic average next target/support dari semua timeframe ===
+    // === Logic average S/R levels dari semua timeframe ===
     const timeframes = ['daily', 'weekly', 'monthly', 'yearly'];
-    let nextTargets = [], nextSupports = [];
+    let avgLevels = { s4: 0, s3: 0, s2: 0, s1: 0, pivot: 0, r1: 0, r2: 0, r3: 0, r4: 0 };
+    let validLevels = { s4: 0, s3: 0, s2: 0, s1: 0, pivot: 0, r1: 0, r2: 0, r3: 0, r4: 0 };
+    
+    // Kumpul semua S/R levels dari semua timeframes
     timeframes.forEach(tf => {
         const tfLevels = window.calculator?.timeframes?.[tf]?.levels || {};
-        const tfCurrent = window.calculator?.currentPrice || 0;
-        const resistanceLevels = ['r1', 'r2', 'r3', 'r4'];
-        const supportLevels = ['s1', 's2', 's3', 's4'];
-        let tfNextTarget = null, tfNextSupport = null;
-        for (let i = 0; i < resistanceLevels.length; i++) {
-            const lvl = tfLevels[resistanceLevels[i]];
-            if (lvl > tfCurrent) {
-                tfNextTarget = lvl;
-                break;
-            }
-        }
-        for (let i = 0; i < supportLevels.length; i++) {
-            const lvl = tfLevels[supportLevels[i]];
-            if (lvl < tfCurrent) {
-                tfNextSupport = lvl;
-                break;
-            }
-        }
-        if (tfNextTarget !== null && !isNaN(tfNextTarget)) nextTargets.push(tfNextTarget);
-        if (tfNextSupport !== null && !isNaN(tfNextSupport)) nextSupports.push(tfNextSupport);
+        if (tfLevels.s4 && !isNaN(tfLevels.s4)) { avgLevels.s4 += tfLevels.s4; validLevels.s4++; }
+        if (tfLevels.s3 && !isNaN(tfLevels.s3)) { avgLevels.s3 += tfLevels.s3; validLevels.s3++; }
+        if (tfLevels.s2 && !isNaN(tfLevels.s2)) { avgLevels.s2 += tfLevels.s2; validLevels.s2++; }
+        if (tfLevels.s1 && !isNaN(tfLevels.s1)) { avgLevels.s1 += tfLevels.s1; validLevels.s1++; }
+        if (tfLevels.pivot && !isNaN(tfLevels.pivot)) { avgLevels.pivot += tfLevels.pivot; validLevels.pivot++; }
+        if (tfLevels.r1 && !isNaN(tfLevels.r1)) { avgLevels.r1 += tfLevels.r1; validLevels.r1++; }
+        if (tfLevels.r2 && !isNaN(tfLevels.r2)) { avgLevels.r2 += tfLevels.r2; validLevels.r2++; }
+        if (tfLevels.r3 && !isNaN(tfLevels.r3)) { avgLevels.r3 += tfLevels.r3; validLevels.r3++; }
+        if (tfLevels.r4 && !isNaN(tfLevels.r4)) { avgLevels.r4 += tfLevels.r4; validLevels.r4++; }
     });
-    const avgNextTarget = nextTargets.length > 0 ? nextTargets.reduce((a,b) => a+b, 0) / nextTargets.length : null;
-    const avgNextSupport = nextSupports.length > 0 ? nextSupports.reduce((a,b) => a+b, 0) / nextSupports.length : null;
+    
+    // Kira average untuk setiap level
+    Object.keys(avgLevels).forEach(key => {
+        avgLevels[key] = validLevels[key] > 0 ? avgLevels[key] / validLevels[key] : null;
+    });
+    
+    // Cari next target dan next support berdasarkan average levels
+    const currentPrice = window.calculator?.currentPrice || 0;
+    const resistanceLevels = ['r1', 'r2', 'r3', 'r4'];
+    const supportLevels = ['s1', 's2', 's3', 's4'];
+    let avgNextTarget = null, avgNextSupport = null;
+    
+    // Cari next target (resistance terdekat di atas current price)
+    for (let i = 0; i < resistanceLevels.length; i++) {
+        const lvl = avgLevels[resistanceLevels[i]];
+        if (lvl && lvl > currentPrice) {
+            avgNextTarget = lvl;
+            break;
+        }
+    }
+    
+    // Cari next support (support terdekat di bawah current price)
+    for (let i = 0; i < supportLevels.length; i++) {
+        const lvl = avgLevels[supportLevels[i]];
+        if (lvl && lvl < currentPrice) {
+            avgNextSupport = lvl;
+            break;
+        }
+    }
+    
+    // Jika tiada support di bawah, cari support seterusnya (S2, S3, S4)
+    if (avgNextSupport === null) {
+        for (let i = 0; i < supportLevels.length; i++) {
+            const lvl = avgLevels[supportLevels[i]];
+            if (lvl && lvl > 0) {
+                avgNextSupport = lvl;
+                break;
+            }
+        }
+    }
 
     // For each currency card
     const currencies = [
@@ -1621,38 +1670,20 @@ function updateCalculatorTab() {
         const totalCost = entryPriceCur * btcAmount;
         const currentValue = currentPrice * sellAmount;
         const profitLoss = (currentPrice - entryPriceCur) * sellAmount;
-        // === Logic dinamik untuk next target/support ===
-        // Cari next resistance (target) yang lebih tinggi dari current price, dan support terdekat di bawah current price
-        const resistanceLevels = ['r1', 'r2', 'r3', 'r4'];
-        const supportLevels = ['s1', 's2', 's3', 's4'];
+        // === Logic dinamik untuk next target/support berdasarkan average levels ===
+        // Gunakan average levels untuk mengira next target dan next support
         let nextTargetLevel = null, nextSupportLevel = null;
-        // Cari next target (resistance terdekat di atas current price)
-        for (let i = 0; i < resistanceLevels.length; i++) {
-            const lvl = getPrice(levels[resistanceLevels[i]] || 0, cur.symbol);
-            if (lvl > currentPrice) {
-                nextTargetLevel = lvl;
-                break;
-            }
+        
+        // Cari next target berdasarkan average levels
+        if (avgNextTarget !== null) {
+            nextTargetLevel = getPrice(avgNextTarget, cur.symbol);
         }
-        // Jika tiada resistance di atas, next target = null
-        // Cari next support (support terdekat di bawah current price)
-        for (let i = 0; i < supportLevels.length; i++) {
-            const lvl = getPrice(levels[supportLevels[i]] || 0, cur.symbol);
-            if (lvl < currentPrice) {
-                nextSupportLevel = lvl;
-                break;
-            }
+        
+        // Cari next support berdasarkan average levels
+        if (avgNextSupport !== null) {
+            nextSupportLevel = getPrice(avgNextSupport, cur.symbol);
         }
-        // Jika tiada support di bawah, cari support seterusnya (S2, S3, S4)
-        if (nextSupportLevel === null) {
-            for (let i = 0; i < supportLevels.length; i++) {
-                const lvl = getPrice(levels[supportLevels[i]] || 0, cur.symbol);
-                if (lvl > 0) {
-                    nextSupportLevel = lvl;
-                    break;
-                }
-            }
-        }
+        
         // === FIX: Calculate gain and risk for balance BTC ===
         let gain = null, risk = null;
         if (balanceBtc > 0) {
@@ -1660,12 +1691,15 @@ function updateCalculatorTab() {
             if (nextSupportLevel === null) {
                 risk = 0;
             } else if (nextSupportLevel >= currentPrice) {
-                // Jika next support lebih tinggi/sama dengan current price, cari support seterusnya
+                // Jika next support lebih tinggi/sama dengan current price, cari support seterusnya dari average levels
                 for (let i = 0; i < supportLevels.length; i++) {
-                    const lvl = getPrice(levels[supportLevels[i]] || 0, cur.symbol);
-                    if (lvl < currentPrice && lvl > 0) {
-                        risk = (currentPrice - lvl) * balanceBtc;
-                        break;
+                    const avgLvl = avgLevels[supportLevels[i]];
+                    if (avgLvl && avgLvl < currentPriceUSD) {
+                        const lvl = getPrice(avgLvl, cur.symbol);
+                        if (lvl < currentPrice && lvl > 0) {
+                            risk = (currentPrice - lvl) * balanceBtc;
+                            break;
+                        }
                     }
                 }
                 if (risk === null || risk <= 0) risk = 0;
