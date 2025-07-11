@@ -670,6 +670,16 @@ class MultiTimeframeBTCCalculator {
                         break;
                     }
                 }
+                // Jika tiada support di bawah, cari support seterusnya (S2, S3, S4)
+                if (nextSupportLevel === null) {
+                    for (let i = 0; i < supportLevels.length; i++) {
+                        const lvl = levels[supportLevels[i]];
+                        if (lvl > 0) {
+                            nextSupportLevel = lvl;
+                            break;
+                        }
+                    }
+                }
                 if (taSuggestion === 'HOLD' || taSuggestion === 'CAUTION') {
                     taTarget = `
                         <div class='next-target' style='margin-bottom:0;'>Next Target: <b>${window.formatPrice ? window.formatPrice(nextTargetLevel) : (nextTargetLevel ?? '-')}</b></div>
@@ -1227,13 +1237,48 @@ function renderSRTargetInConverter() {
     if (current <= levels.s1 * 1.01) taSuggestion = 'BUY';
     else if (current >= levels.r1 * 0.99) taSuggestion = 'SELL';
     else taSuggestion = 'HOLD';
+    
+    // Cari next target dan next support dinamik
+    const resistanceLevels = ['r1', 'r2', 'r3', 'r4'];
+    const supportLevels = ['s1', 's2', 's3', 's4'];
+    let nextTargetLevel = null, nextSupportLevel = null;
+    
+    // Cari next target (resistance terdekat di atas current price)
+    for (let i = 0; i < resistanceLevels.length; i++) {
+        const lvl = levels[resistanceLevels[i]];
+        if (lvl > current) {
+            nextTargetLevel = lvl;
+            break;
+        }
+    }
+    
+    // Cari next support (support terdekat di bawah current price)
+    for (let i = 0; i < supportLevels.length; i++) {
+        const lvl = levels[supportLevels[i]];
+        if (lvl < current) {
+            nextSupportLevel = lvl;
+            break;
+        }
+    }
+    
+    // Jika tiada support di bawah, cari support seterusnya (S2, S3, S4)
+    if (nextSupportLevel === null) {
+        for (let i = 0; i < supportLevels.length; i++) {
+            const lvl = levels[supportLevels[i]];
+            if (lvl > 0) {
+                nextSupportLevel = lvl;
+                break;
+            }
+        }
+    }
+    
     if (taSuggestion === 'HOLD' || taSuggestion === 'CAUTION') {
-        srTargets.push({ label: 'Mid/Short Potential Gain', value: levels.r1, multiply: true });
-        srTargets.push({ label: 'Mid/Short Potential Risk', value: levels.s1, multiply: true });
+        srTargets.push({ label: 'Mid/Short Potential Gain', value: nextTargetLevel || levels.r1, multiply: true });
+        srTargets.push({ label: 'Mid/Short Potential Risk', value: nextSupportLevel || levels.s1, multiply: true });
     } else if (taSuggestion.includes('BUY')) {
-        srTargets.push({ label: 'Mid/Short Potential Gain', value: levels.r1, multiply: true });
+        srTargets.push({ label: 'Mid/Short Potential Gain', value: nextTargetLevel || levels.r1, multiply: true });
     } else if (taSuggestion.includes('SELL') || taSuggestion === 'LOCK PROFIT') {
-        srTargets.push({ label: 'Mid/Short Potential Risk', value: levels.s1, multiply: true });
+        srTargets.push({ label: 'Mid/Short Potential Risk', value: nextSupportLevel || levels.s1, multiply: true });
     }
     srTargets.push({ label: 'Current Price', value: current, multiply: false });
     // Calculate average most bought/sold from summary timeframes
@@ -1263,8 +1308,8 @@ function renderSRTargetInConverter() {
     const mainTargets = [];
     if (btcAmount > 0) {
         // Potential Gain
-        if (typeof levels.r1 === 'number' && !isNaN(levels.r1)) {
-            const gain = (levels.r1 - current) * btcAmount;
+        if (typeof nextTargetLevel === 'number' && !isNaN(nextTargetLevel)) {
+            const gain = (nextTargetLevel - current) * btcAmount;
             mainTargets.push({
                 label: 'Potential Gain',
                 value: gain,
@@ -1273,8 +1318,20 @@ function renderSRTargetInConverter() {
             });
         }
         // Potential Risk
-        if (typeof levels.s1 === 'number' && !isNaN(levels.s1)) {
-            const risk = (current - levels.s1) * btcAmount;
+        if (typeof nextSupportLevel === 'number' && !isNaN(nextSupportLevel)) {
+            let risk = 0;
+            if (nextSupportLevel < current) {
+                risk = (current - nextSupportLevel) * btcAmount;
+            } else {
+                // Jika next support lebih tinggi/sama dengan current price, cari support seterusnya
+                for (let i = 0; i < supportLevels.length; i++) {
+                    const lvl = levels[supportLevels[i]];
+                    if (lvl < current && lvl > 0) {
+                        risk = (current - lvl) * btcAmount;
+                        break;
+                    }
+                }
+            }
             mainTargets.push({
                 label: 'Potential Risk',
                 value: risk,
@@ -1511,6 +1568,35 @@ function updateCalculatorTab() {
     const levels = window.calculator?.timeframes?.[activeTimeframe]?.levels || {};
     const data = window.calculator?.timeframes?.[activeTimeframe] || {};
 
+    // === Logic average next target/support dari semua timeframe ===
+    const timeframes = ['daily', 'weekly', 'monthly', 'yearly'];
+    let nextTargets = [], nextSupports = [];
+    timeframes.forEach(tf => {
+        const tfLevels = window.calculator?.timeframes?.[tf]?.levels || {};
+        const tfCurrent = window.calculator?.currentPrice || 0;
+        const resistanceLevels = ['r1', 'r2', 'r3', 'r4'];
+        const supportLevels = ['s1', 's2', 's3', 's4'];
+        let tfNextTarget = null, tfNextSupport = null;
+        for (let i = 0; i < resistanceLevels.length; i++) {
+            const lvl = tfLevels[resistanceLevels[i]];
+            if (lvl > tfCurrent) {
+                tfNextTarget = lvl;
+                break;
+            }
+        }
+        for (let i = 0; i < supportLevels.length; i++) {
+            const lvl = tfLevels[supportLevels[i]];
+            if (lvl < tfCurrent) {
+                tfNextSupport = lvl;
+                break;
+            }
+        }
+        if (tfNextTarget !== null && !isNaN(tfNextTarget)) nextTargets.push(tfNextTarget);
+        if (tfNextSupport !== null && !isNaN(tfNextSupport)) nextSupports.push(tfNextSupport);
+    });
+    const avgNextTarget = nextTargets.length > 0 ? nextTargets.reduce((a,b) => a+b, 0) / nextTargets.length : null;
+    const avgNextSupport = nextSupports.length > 0 ? nextSupports.reduce((a,b) => a+b, 0) / nextSupports.length : null;
+
     // For each currency card
     const currencies = [
         { id: 'usd', symbol: 'USD', icon: '💵', label: 'US Dollar' },
@@ -1557,12 +1643,35 @@ function updateCalculatorTab() {
                 break;
             }
         }
-        // Jika tiada support di bawah, next support = null
+        // Jika tiada support di bawah, cari support seterusnya (S2, S3, S4)
+        if (nextSupportLevel === null) {
+            for (let i = 0; i < supportLevels.length; i++) {
+                const lvl = getPrice(levels[supportLevels[i]] || 0, cur.symbol);
+                if (lvl > 0) {
+                    nextSupportLevel = lvl;
+                    break;
+                }
+            }
+        }
         // === FIX: Calculate gain and risk for balance BTC ===
         let gain = null, risk = null;
         if (balanceBtc > 0) {
             gain = nextTargetLevel !== null ? (nextTargetLevel - currentPrice) * balanceBtc : null;
-            risk = nextSupportLevel !== null ? (currentPrice - nextSupportLevel) * balanceBtc : null;
+            if (nextSupportLevel === null) {
+                risk = 0;
+            } else if (nextSupportLevel >= currentPrice) {
+                // Jika next support lebih tinggi/sama dengan current price, cari support seterusnya
+                for (let i = 0; i < supportLevels.length; i++) {
+                    const lvl = getPrice(levels[supportLevels[i]] || 0, cur.symbol);
+                    if (lvl < currentPrice && lvl > 0) {
+                        risk = (currentPrice - lvl) * balanceBtc;
+                        break;
+                    }
+                }
+                if (risk === null || risk <= 0) risk = 0;
+            } else {
+                risk = (currentPrice - nextSupportLevel) * balanceBtc;
+            }
         }
         // Main profit/loss output
         let profitText = '';
@@ -1581,8 +1690,8 @@ function updateCalculatorTab() {
         let srHtml = '';
         srHtml += '<ul class="sr-target-list-info">';
         srHtml += `<li><span class='sr-label'>Current Price:</span> <span class='sr-value'>${format(currentPrice, cur.symbol)}</span></li>`;
-        srHtml += `<li><span class='sr-label'>Next Target:</span> <span class='sr-value'>${nextTargetLevel !== null ? format(nextTargetLevel, cur.symbol) : '-'}</span></li>`;
-        srHtml += `<li><span class='sr-label'>Next Support:</span> <span class='sr-value'>${nextSupportLevel !== null ? format(nextSupportLevel, cur.symbol) : '-'}</span></li>`;
+        srHtml += `<li><span class='sr-label'>Next Target:</span> <span class='sr-value'>${avgNextTarget !== null ? format(getPrice(avgNextTarget, cur.symbol), cur.symbol) : '-'}</span></li>`;
+        srHtml += `<li><span class='sr-label'>Next Support:</span> <span class='sr-value'>${avgNextSupport !== null ? format(getPrice(avgNextSupport, cur.symbol), cur.symbol) : '-'}</span></li>`;
         // Calculate average most bought/sold from summary timeframes (always in USD, then convert)
         const tfs = ['daily', 'weekly', 'monthly', 'yearly'];
         let sumHighUSD = 0, sumLowUSD = 0, countHigh = 0, countLow = 0;
@@ -1617,7 +1726,10 @@ function updateCalculatorTab() {
         else if (profitClass === 'negative') currentValueClass = 'sr-risk';
         srHtml += `<li><span class='sr-label'>Current Value:</span> <span class='sr-value ${currentValueClass}'>${format(currentValueBalance, cur.symbol)}</span></li>`;
         if (gain !== null) srHtml += `<li><span class='sr-label'>Mid/Short Reward Value:</span> <span class='sr-value sr-gain'>${gain >= 0 ? '+' : ''}${format(Math.abs(gain), cur.symbol)}</span></li>`;
-        if (risk !== null) srHtml += `<li><span class='sr-label'>Mid/Short Risk Value:</span> <span class='sr-value sr-risk'>-${format(Math.abs(risk), cur.symbol)}</span></li>`;
+        if (risk !== null) {
+            const riskValue = risk < 0 ? 0 : risk;
+            srHtml += `<li><span class='sr-label'>Mid/Short Risk Value:</span> <span class='sr-value sr-risk'>${Math.abs(riskValue) < 1e-6 ? '0' : '-' + format(Math.abs(riskValue), cur.symbol)}</span></li>`;
+        }
         // === Long Term Reward/Risk Value (Yearly S/R dengan logic yang sama) ===
         const yearlyLevels = window.calculator?.timeframes?.yearly?.levels;
         if (
@@ -1658,10 +1770,8 @@ function updateCalculatorTab() {
             const longGain = (yearlyNextTargetLevel - currentPrice) * balanceBtc;
             const longRisk = (currentPrice - yearlyNextSupportLevel) * balanceBtc;
             srHtml += `<li><span class='sr-label'>Long Term Reward Value:</span> <span class='sr-value sr-gain'>+${format(Math.abs(longGain), cur.symbol)}</span></li>`;
-            srHtml += `<li><span class='sr-label'>Long Term Risk Value:</span> <span class='sr-value sr-risk'>-${format(Math.abs(longRisk), cur.symbol)}</span></li>`;
-        } else {
-            srHtml += `<li><span class='sr-label'>Long Term Reward Value:</span> <span class='sr-value'>-</span></li>`;
-            srHtml += `<li><span class='sr-label'>Long Term Risk Value:</span> <span class='sr-value'>-</span></li>`;
+            const longRiskValue = longRisk < 0 ? 0 : longRisk;
+            srHtml += `<li><span class='sr-label'>Long Term Risk Value:</span> <span class='sr-value sr-risk'>${Math.abs(longRiskValue) < 1e-6 ? '0' : '-' + format(Math.abs(longRiskValue), cur.symbol)}</span></li>`;
         }
         srHtml += '</ul>';
         srTargetEl.innerHTML = srHtml;
