@@ -27,18 +27,18 @@ class MultiTimeframeBTCCalculator {
     
     async getCurrentPrice() {
         try {
-            // Use CoinGecko for more accurate global market price
-            const response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd');
-            const data = await response.json();
-            this.currentPrice = parseFloat(data.bitcoin.usd);
+            // Use Binance API as primary source (more reliable, no CORS issues)
+            const binanceResponse = await fetch('https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT');
+            const binanceData = await binanceResponse.json();
+            this.currentPrice = parseFloat(binanceData.price);
             this.updateStatus('Current price loaded successfully', 'success');
         } catch (error) {
-            // Fallback to Binance if CoinGecko fails
+            // Fallback to CoinGecko if Binance fails
             try {
-                const binanceResponse = await fetch('https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT');
-                const binanceData = await binanceResponse.json();
-                this.currentPrice = parseFloat(binanceData.price);
-                this.updateStatus('Current price loaded from Binance (fallback)', 'success');
+                const response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd');
+                const data = await response.json();
+                this.currentPrice = parseFloat(data.bitcoin.usd);
+                this.updateStatus('Current price loaded from CoinGecko (fallback)', 'success');
             } catch (fallbackError) {
                 this.updateStatus('Error loading current price', 'error');
             }
@@ -384,31 +384,45 @@ class MultiTimeframeBTCCalculator {
     }
     
     updateChart(timeframe) {
-        if (!btcChart) return;
+        if (!window.btcChart) {
+            console.log('Chart not available');
+            return;
+        }
         
         const data = this.timeframes[timeframe];
-        if (!data || !data.coinGeckoData) return;
+        if (!data || !data.coinGeckoData) {
+            console.log('No data available for chart update');
+            return;
+        }
         
-        // Generate candlestick data from CoinGecko data
-        const candlestickData = btcChart.generateCandlestickData(data.coinGeckoData, timeframe);
-        
-        // Get support and resistance levels
-        const supportLevels = [
-            data.levels?.s1 || 0,
-            data.levels?.s2 || 0,
-            data.levels?.s3 || 0,
-            data.levels?.s4 || 0
-        ].filter(level => level > 0);
-        
-        const resistanceLevels = [
-            data.levels?.r1 || 0,
-            data.levels?.r2 || 0,
-            data.levels?.r3 || 0,
-            data.levels?.r4 || 0
-        ].filter(level => level > 0);
-        
-        // Update chart
-        btcChart.setData(candlestickData, supportLevels, resistanceLevels, this.currentPrice, timeframe);
+        try {
+            // Generate candlestick data from CoinGecko data
+            const candlestickData = window.btcChart.generateCandlestickData(data.coinGeckoData, timeframe);
+            
+            // Get support and resistance levels
+            const supportLevels = [
+                data.levels?.s1 || 0,
+                data.levels?.s2 || 0,
+                data.levels?.s3 || 0,
+                data.levels?.s4 || 0
+            ].filter(level => level > 0);
+            
+            const resistanceLevels = [
+                data.levels?.r1 || 0,
+                data.levels?.r2 || 0,
+                data.levels?.r3 || 0,
+                data.levels?.r4 || 0
+            ].filter(level => level > 0);
+            
+            // Update chart
+            if (typeof window.btcChart.setData === 'function') {
+                window.btcChart.setData(candlestickData, supportLevels, resistanceLevels, this.currentPrice, timeframe);
+            } else {
+                console.log('Chart setData method not available');
+            }
+        } catch (error) {
+            console.log('Chart update error:', error);
+        }
     }
     
     updateComparisonTable() {
@@ -851,7 +865,8 @@ let converterRates = {
 async function fetchConverterRates() {
     try {
         console.log('Fetching exchange rates...');
-        const res = await fetch('https://api.exchangerate.host/latest?base=USD&symbols=MYR,CNY,IDR');
+        // Use exchangerate-api.com which doesn't require API key
+        const res = await fetch('https://api.exchangerate-api.com/v4/latest/USD');
         
         if (!res.ok) {
             throw new Error(`HTTP ${res.status}: ${res.statusText}`);
@@ -860,14 +875,10 @@ async function fetchConverterRates() {
         const data = await res.json();
         console.log('Exchange rates response:', data);
         
-        if (data.success === false) {
-            throw new Error(data.error?.info || 'API returned error');
-        }
-        
         converterRates.MYR = data.rates.MYR;
         converterRates.CNY = data.rates.CNY;
         converterRates.IDR = data.rates.IDR;
-        window.converterRates = converterRates; // <-- ensure global
+        window.converterRates = converterRates;
         
         console.log('Rates loaded:', converterRates);
         updateConverterRateInfo();
@@ -879,11 +890,14 @@ async function fetchConverterRates() {
         converterRates.MYR = 4.25;
         converterRates.CNY = 7.20;
         converterRates.IDR = 15800;
-        window.converterRates = converterRates; // <-- ensure global fallback
+        window.converterRates = converterRates;
         
-        document.getElementById('converter-rate-info').innerHTML = 
-            'Using fallback rates (live rates unavailable)<br>' +
-            '<small>1 USD = 4.25 MYR | 7.20 CNY | 15,800 IDR</small>';
+        const rateInfo = document.getElementById('converter-rate-info');
+        if (rateInfo) {
+            rateInfo.innerHTML = 
+                'Using fallback rates (live rates unavailable)<br>' +
+                '<small>1 USD = 4.25 MYR | 7.20 CNY | 15,800 IDR</small>';
+        }
     }
 }
 
@@ -937,7 +951,7 @@ window.currencyRates = currencyRates;
 
 async function fetchCurrencyRates() {
     try {
-        const res = await fetch('https://api.exchangerate.host/latest?base=USD&symbols=MYR');
+        const res = await fetch('https://api.exchangerate-api.com/v4/latest/USD');
         const data = await res.json();
         currencyRates.MYR = data.rates.MYR;
         // Update global currency rates for chart
@@ -1055,14 +1069,14 @@ function updateComparisonTableCurrency() {
 function updateSummaryTabCurrency() {
     const timeframes = ['daily', 'weekly', 'monthly', 'yearly'];
     timeframes.forEach(tf => {
-        const data = this.timeframes[tf];
+        const data = window.calculator?.timeframes?.[tf];
         const levels = data.levels;
         let srSuggestion = '-', vtSuggestion = '-', taSuggestion = '-';
         let taTarget = '';
         let hvSuggestion = '-';
         let info = '';
         if (levels && data.high && data.low && data.close) {
-            const current = this.currentPrice;
+            const current = window.calculator?.currentPrice || 0;
 
             // SR suggestion
             if (current <= levels.s1 * 1.01) {
