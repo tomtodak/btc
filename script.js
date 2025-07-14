@@ -28,9 +28,9 @@ class MultiTimeframeBTCCalculator {
     async getCurrentPrice() {
         try {
             // Use Binance API as primary source (more reliable, no CORS issues)
-            const binanceResponse = await fetch('https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT');
-            const binanceData = await binanceResponse.json();
-            this.currentPrice = parseFloat(binanceData.price);
+                const binanceResponse = await fetch('https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT');
+                const binanceData = await binanceResponse.json();
+                this.currentPrice = parseFloat(binanceData.price);
             this.updateStatus('Current price loaded successfully', 'success');
         } catch (error) {
             // Fallback to CoinGecko if Binance fails
@@ -396,25 +396,25 @@ class MultiTimeframeBTCCalculator {
         }
         
         try {
-            // Generate candlestick data from CoinGecko data
+        // Generate candlestick data from CoinGecko data
             const candlestickData = window.btcChart.generateCandlestickData(data.coinGeckoData, timeframe);
-            
-            // Get support and resistance levels
-            const supportLevels = [
-                data.levels?.s1 || 0,
-                data.levels?.s2 || 0,
-                data.levels?.s3 || 0,
-                data.levels?.s4 || 0
-            ].filter(level => level > 0);
-            
-            const resistanceLevels = [
-                data.levels?.r1 || 0,
-                data.levels?.r2 || 0,
-                data.levels?.r3 || 0,
-                data.levels?.r4 || 0
-            ].filter(level => level > 0);
-            
-            // Update chart
+        
+        // Get support and resistance levels
+        const supportLevels = [
+            data.levels?.s1 || 0,
+            data.levels?.s2 || 0,
+            data.levels?.s3 || 0,
+            data.levels?.s4 || 0
+        ].filter(level => level > 0);
+        
+        const resistanceLevels = [
+            data.levels?.r1 || 0,
+            data.levels?.r2 || 0,
+            data.levels?.r3 || 0,
+            data.levels?.r4 || 0
+        ].filter(level => level > 0);
+        
+        // Update chart
             if (typeof window.btcChart.setData === 'function') {
                 window.btcChart.setData(candlestickData, supportLevels, resistanceLevels, this.currentPrice, timeframe);
             } else {
@@ -712,11 +712,22 @@ class MultiTimeframeBTCCalculator {
                 const highlightSold = sellVol > buyVol;
                 const mostBoughtStyle = highlightBought ? 'color:#16c784;font-weight:bold;' : '';
                 const mostSoldStyle = highlightSold ? 'color:#ff4b4b;font-weight:bold;' : '';
+                // Add color styling for SR, VT, HV suggestions
+                const getSuggestionColor = (suggestion) => {
+                    if (suggestion === 'BUY') return 'color:#16c784;font-weight:bold;';
+                    if (suggestion === 'SELL' || suggestion === 'LOCK PROFIT') return 'color:#ff4b4b;font-weight:bold;';
+                    return 'color:#ffffff;font-weight:bold;';
+                };
+                
+                const srColor = getSuggestionColor(srSuggestion);
+                const vtColor = getSuggestionColor(vtSuggestion);
+                const hvColor = getSuggestionColor(hvSuggestion);
+                
                 info = `
                     ${taTarget}
-                    <div><b>SR</b>: ${srSuggestion}</div>
-                    <div><b>VT</b>: ${vtSuggestion}</div>
-                    <div><b>HV</b>: ${hvSuggestion}</div>
+                    <div><b>SR</b>: <span style="${srColor}">${srSuggestion}</span></div>
+                    <div><b>VT</b>: <span style="${vtColor}">${vtSuggestion}</span></div>
+                    <div><b>HV</b>: <span style="${hvColor}">${hvSuggestion}</span></div>
                     <div style="margin-top:8px;">Current Price: <b>${window.formatPrice ? window.formatPrice(current) : current}</b></div>
                     <div style='${mostBoughtStyle}'>Most Bought: <b>${window.formatPrice ? window.formatPrice(data.high) : data.high}</b></div>
                     <div style='${mostSoldStyle}'>Most Sold: <b>${window.formatPrice ? window.formatPrice(data.low) : data.low}</b></div>
@@ -895,8 +906,8 @@ async function fetchConverterRates() {
         const rateInfo = document.getElementById('converter-rate-info');
         if (rateInfo) {
             rateInfo.innerHTML = 
-                'Using fallback rates (live rates unavailable)<br>' +
-                '<small>1 USD = 4.25 MYR | 7.20 CNY | 15,800 IDR</small>';
+            'Using fallback rates (live rates unavailable)<br>' +
+            '<small>1 USD = 4.25 MYR | 7.20 CNY | 15,800 IDR</small>';
         }
     }
 }
@@ -1160,11 +1171,22 @@ function updateSummaryTabCurrency() {
             const highlightSold = sellVol > buyVol;
             const mostBoughtStyle = highlightBought ? 'color:#16c784;font-weight:bold;' : '';
             const mostSoldStyle = highlightSold ? 'color:#ff4b4b;font-weight:bold;' : '';
+            // Add color styling for SR, VT, HV suggestions
+            const getSuggestionColor = (suggestion) => {
+                if (suggestion === 'BUY') return 'color:#16c784;font-weight:bold;';
+                if (suggestion === 'SELL' || suggestion === 'LOCK PROFIT') return 'color:#ff4b4b;font-weight:bold;';
+                return 'color:#ffffff;font-weight:bold;';
+            };
+            
+            const srColor = getSuggestionColor(srSuggestion);
+            const vtColor = getSuggestionColor(vtSuggestion);
+            const hvColor = getSuggestionColor(hvSuggestion);
+            
             info = `
                 ${taTarget}
-                <div><b>SR</b>: ${srSuggestion}</div>
-                <div><b>VT</b>: ${vtSuggestion}</div>
-                <div><b>HV</b>: ${hvSuggestion}</div>
+                <div><b>SR</b>: <span style="${srColor}">${srSuggestion}</span></div>
+                <div><b>VT</b>: <span style="${vtColor}">${vtSuggestion}</span></div>
+                <div><b>HV</b>: <span style="${hvColor}">${hvSuggestion}</span></div>
                 <div style="margin-top:8px;">Current Price: <b>${window.formatPrice ? window.formatPrice(current) : current}</b></div>
                 <div style='${mostBoughtStyle}'>Most Bought: <b>${window.formatPrice ? window.formatPrice(data.high) : data.high}</b></div>
                 <div style='${mostSoldStyle}'>Most Sold: <b>${window.formatPrice ? window.formatPrice(data.low) : data.low}</b></div>
