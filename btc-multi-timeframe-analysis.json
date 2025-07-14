@@ -1,0 +1,19 @@
+{
+  "name": "BTC Multi-Timeframe Analysis",
+  "description": "A web app for analyzing Bitcoin support & resistance levels and volume trends across daily, weekly, and monthly timeframes. Provides combined technical and volume-based suggestions for trading decisions.",
+  "author": "tOm",
+  "main_files": [
+    "index.html",
+    "styles.css",
+    "chart.js",
+    "script.js"
+  ],
+  "features": [
+    "Candlestick chart with S/R levels",
+    "Tab for Daily, Weekly, Monthly analysis",
+    "Summary tab with combined suggestions (SR, VT, TA)",
+    "Responsive UI",
+    "Export data as JSON"
+  ],
+  "repository": "https://github.com/tomtodak/btc"
+} 

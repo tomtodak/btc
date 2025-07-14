@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BTC Multi-Timeframe Analysis (Daily, Weekly, Monthly) by tOm</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="chart.js"></script>
+</head>
+<body>
+    <div class="container">
+        <!-- Currency Toggle Button -->
+        <div class="currency-toggle">
+            <button class="currency-btn active" data-currency="USD">
+                <span class="currency-icon">💵</span>
+                <span class="currency-text">USD</span>
+            </button>
+            <button class="currency-btn" data-currency="MYR">
+                <span class="currency-icon">🇲🇾</span>
+                <span class="currency-text">MYR</span>
+            </button>
+        </div>
+        
+        <div class="header" style="text-align:center;">
+            <div class="btc-logo" style="display: flex; justify-content: center; align-items: center; margin-bottom: 8px;">
+                <svg width="100" height="100" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" style="display: block; filter: drop-shadow(0 0 8px #f7931a);">
+                  <circle cx="50" cy="50" r="48" fill="#fff" stroke="#f7931a" stroke-width="4"/>
+                  <text x="50%" y="54%" text-anchor="middle" fill="#f7931a" font-size="54" font-family="Arial, Helvetica, sans-serif" font-weight="bold" dy=".3em">₿</text>
+                </svg>
+            </div>
+            <h1 style="margin: 0;">BTC Analytical Analysis</h1>
+            <p style="margin-top: 8px;">Multi-Timeframe Analysis (Daily, Weekly, Monthly) by tOm</p>
+        </div>
+        
+        <!-- Centered Tab Navigation -->
+        <div class="tab-nav center-tabs">
+          <button class="tab-button" data-timeframe="daily">Daily</button>
+          <button class="tab-button" data-timeframe="weekly">Weekly</button>
+          <button class="tab-button" data-timeframe="monthly">Monthly</button>
+          <button class="tab-button" data-timeframe="yearly">Yearly</button>
+          <button class="tab-button" data-timeframe="summary">Summary</button>
+          <button class="tab-button" data-timeframe="converter">Converter</button>
+          <button class="tab-button" data-timeframe="calculator">Calculator</button>
+          <button class="tab-button" data-timeframe="reference">Reference/Index</button>
+        </div>
+        
+        <div class="price-display">
+            <div class="current-price" id="currentPrice">Loading...</div>
+            <div id="status" class="status"></div>
+        </div>
+        
+        <div class="chart-container">
+            <canvas id="btcChart" width="1200" height="600" style="display:block;"></canvas>
+            
+            <!-- Converter Wrapper -->
+            <div id="converter-wrapper" style="display:none;">
+                <div class="converter-main">
+                    <div class="converter-header">
+                        <h2>💱 BTC Currency Converter</h2>
+                        <p class="converter-subtitle">Convert Bitcoin to multiple currencies instantly</p>
+                    </div>
+                    
+                    <div class="converter-input-section">
+                        <div class="btc-input-wrapper">
+                            <label for="conv-btc-main">Enter BTC Amount:</label>
+                            <div class="btc-input-group">
+                                <input type="text" id="conv-btc-main" step="any" min="0" placeholder="0.00" class="btc-main-input">
+                                <span class="btc-symbol">₿</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Combined TA Main Suggestion -->
+                    <div id="converter-ta-combined" class="converter-ta-combined" style="text-align:center; margin: 20px 0; padding: 15px; background: rgba(255,255,255,0.1); border-radius: 10px; border: 2px solid rgba(255,255,255,0.2);">
+                        <div class="combined-ta-label" style="font-size: 14px; color: #ccc; margin-bottom: 8px;">MAIN SUGGESTION</div>
+                        <div class="combined-ta-value" style="font-size: 32px; font-weight: bold; color: #fff;">-</div>
+                    </div>
+                    
+                    <!-- Individual TA Suggestions -->
+                    <div id="converter-ta-suggestion" class="converter-ta-suggestion" style="text-align:center; margin-bottom: 18px;">
+                        <div id="converter-ta-daily"></div>
+                        <div id="converter-ta-weekly"></div>
+                        <div id="converter-ta-monthly"></div>
+                        <div id="converter-ta-yearly"></div>
+                    </div>
+                    
+                    <div class="conversion-cards">
+                        <div class="conversion-card usd-card">
+                            <div class="card-icon">💵</div>
+                            <div class="card-content">
+                                <div class="card-label">US Dollar</div>
+                                <div class="card-value" id="conv-usd-main">$0.00</div>
+                                <div class="card-symbol">USD</div>
+                                <div class="sr-target-list" id="sr-target-usd"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="conversion-card myr-card">
+                            <div class="card-icon">🇲🇾</div>
+                            <div class="card-content">
+                                <div class="card-label">Malaysian Ringgit</div>
+                                <div class="card-value" id="conv-myr-main">RM 0.00</div>
+                                <div class="card-symbol">MYR</div>
+                                <div class="sr-target-list" id="sr-target-myr"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="conversion-card cny-card">
+                            <div class="card-icon">🇨🇳</div>
+                            <div class="card-content">
+                                <div class="card-label">Chinese Yuan</div>
+                                <div class="card-value" id="conv-cny-main">¥0.00</div>
+                                <div class="card-symbol">CNY</div>
+                                <div class="sr-target-list" id="sr-target-cny"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="conversion-card idr-card">
+                            <div class="card-icon">🇮🇩</div>
+                            <div class="card-content">
+                                <div class="card-label">Indonesian Rupiah</div>
+                                <div class="card-value" id="conv-idr-main">Rp 0</div>
+                                <div class="card-symbol">IDR</div>
+                                <div class="sr-target-list" id="sr-target-idr"></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="converter-rate-info" id="converter-rate-info"></div>
+                </div>
+            </div>
+            <!-- Calculator Tab Content (centered, replaces chart, no chart in DOM) -->
+            <div id="calculator-content" class="timeframe-content" style="display:none; justify-content:center; align-items:center;">
+              <div class="converter-main" style="margin: 0 auto;">
+                <div class="converter-header">
+                  <h2>🧮 BTC Profit/Loss Calculator</h2>
+                  <p class="converter-subtitle">Calculate your BTC trade profit/loss in multiple currencies</p>
+                </div>
+                <div class="converter-input-section">
+                  <div class="btc-input-wrapper">
+                    <label for="calc-btc-main">BTC Bought:</label>
+                    <div class="btc-input-group">
+                      <input type="text" id="calc-btc-main" step="any" min="0" placeholder="0.0000" class="btc-main-input">
+                      <span class="btc-symbol">₿</span>
+                    </div>
+                  </div>
+                  <div class="btc-input-wrapper">
+                    <label for="calc-sell-btc">BTC to Sell:</label>
+                    <div class="btc-input-group">
+                      <input type="text" id="calc-sell-btc" step="any" min="0" placeholder="0.0000" class="btc-main-input">
+                      <span class="btc-symbol">₿</span>
+                    </div>
+                  </div>
+                  <div class="btc-input-wrapper">
+                    <label for="calc-entry-price">Entry Price:</label>
+                    <div class="btc-input-group">
+                      <input type="text" id="calc-entry-price" min="0" step="any" placeholder="0.00" class="btc-main-input">
+                      <span class="btc-symbol">$</span>
+                    </div>
+                  </div>
+                </div>
+                <div class="conversion-cards">
+                  <div class="conversion-card usd-card">
+                    <div class="card-icon">💵</div>
+                    <div class="card-content">
+                      <div class="card-label">US Dollar</div>
+                      <div class="card-value" id="calc-usd-profit">$0.00</div>
+                      <div class="card-symbol">USD</div>
+                      <div class="sr-target-list" id="calc-sr-target-usd"></div>
+                    </div>
+                  </div>
+                  <div class="conversion-card myr-card">
+                    <div class="card-icon">🇲🇾</div>
+                    <div class="card-content">
+                      <div class="card-label">Malaysian Ringgit</div>
+                      <div class="card-value" id="calc-myr-profit">RM 0.00</div>
+                      <div class="card-symbol">MYR</div>
+                      <div class="sr-target-list" id="calc-sr-target-myr"></div>
+                    </div>
+                  </div>
+                  <div class="conversion-card cny-card">
+                    <div class="card-icon">🇨🇳</div>
+                    <div class="card-content">
+                      <div class="card-label">Chinese Yuan</div>
+                      <div class="card-value" id="calc-cny-profit">¥0.00</div>
+                      <div class="card-symbol">CNY</div>
+                      <div class="sr-target-list" id="calc-sr-target-cny"></div>
+                    </div>
+                  </div>
+                  <div class="conversion-card idr-card">
+                    <div class="card-icon">🇮🇩</div>
+                    <div class="card-content">
+                      <div class="card-label">Indonesian Rupiah</div>
+                      <div class="card-value" id="calc-idr-profit">Rp 0</div>
+                      <div class="card-symbol">IDR</div>
+                      <div class="sr-target-list" id="calc-sr-target-idr"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+        </div>
+        
+        <!-- Reference/Index Tab Content -->
+        <div id="reference-content" class="timeframe-content" style="display:none;">
+            <div class="converter-main" style="margin: 0 auto;">
+                <div class="converter-header">
+                    <h2>📚 Reference & Index Links</h2>
+                    <p class="converter-subtitle">Important Bitcoin analysis and trading resources</p>
+                </div>
+                
+                <div class="reference-links">
+                    <div class="reference-card">
+                        <div class="reference-icon">📈</div>
+                        <div class="reference-content">
+                            <h3>BitBo Long-term Power Law</h3>
+                            <p>Long-term Bitcoin price analysis using power law models</p>
+                            <a href="https://charts.bitbo.io/long-term-power-law/" target="_blank" class="reference-link">
+                                View Power Law Charts →
+                            </a>
+                        </div>
+                    </div>
+                    
+                    <div class="reference-card">
+                        <div class="reference-icon">😨</div>
+                        <div class="reference-content">
+                            <h3>Fear & Greed Index</h3>
+                            <p>Market sentiment indicator showing current fear or greed levels</p>
+                            <a href="https://coinmarketcap.com/charts/fear-and-greed-index/" target="_blank" class="reference-link">
+                                View Fear & Greed Index →
+                            </a>
+                        </div>
+                    </div>
+                    
+                    <div class="reference-card">
+                        <div class="reference-icon">💱</div>
+                        <div class="reference-content">
+                            <h3>Coinbase BTC/USD Trading</h3>
+                            <p>Direct trading interface for Bitcoin on Coinbase exchange</p>
+                            <a href="https://exchange.coinbase.com/trade/BTC-USD" target="_blank" class="reference-link">
+                                Trade on Coinbase →
+                            </a>
+                        </div>
+                    </div>
+                    
+                    <div class="reference-card">
+                        <div class="reference-icon">📊</div>
+                        <div class="reference-content">
+                            <h3>CoinGlass - Binance BTC/USDT</h3>
+                            <p>Real-time trading data and analysis for BTC/USDT pair on Binance</p>
+                            <a href="https://www.coinglass.com/tv/Binance_BTCUSDT" target="_blank" class="reference-link">
+                                Open CoinGlass →
+                            </a>
+                        </div>
+                    </div>
+                    
+                    <div class="reference-card">
+                        <div class="reference-icon">📉</div>
+                        <div class="reference-content">
+                            <h3>TradingView Technical Analysis</h3>
+                            <p>Comprehensive technical analysis with oscillators, moving averages, and pivot points for BTCUSDT</p>
+                            <a href="https://www.tradingview.com/symbols/BTCUSDT/technicals/" target="_blank" class="reference-link">
+                                View Technical Analysis →
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Place summary-cards-wrapper as standalone after chart-container -->
+        <div id="summary-cards-wrapper" style="display:none;">
+            <div class="summary-cards">
+                <div class="summary-card" id="summary-daily-card">
+                    <div class="summary-title">Daily</div>
+                    <div class="summary-suggestion" id="summary-daily-suggestion">-</div>
+                    <div class="summary-info" id="summary-daily-info">-</div>
+                </div>
+                <div class="summary-card" id="summary-weekly-card">
+                    <div class="summary-title">Weekly</div>
+                    <div class="summary-suggestion" id="summary-weekly-suggestion">-</div>
+                    <div class="summary-info" id="summary-weekly-info">-</div>
+                </div>
+                <div class="summary-card" id="summary-monthly-card">
+                    <div class="summary-title">Monthly</div>
+                    <div class="summary-suggestion" id="summary-monthly-suggestion">-</div>
+                    <div class="summary-info" id="summary-monthly-info">-</div>
+                </div>
+                <div class="summary-card" id="summary-yearly-card">
+                    <div class="summary-title">Yearly</div>
+                    <div class="summary-suggestion" id="summary-yearly-suggestion">-</div>
+                    <div class="summary-info" id="summary-yearly-info">-</div>
+                </div>
+            </div>
+                </div>
+                
+                <!-- Daily Content -->
+                <div id="daily-content" class="timeframe-content active">
+                    <div class="levels-grid-new">
+                        <div class="level-row">
+                            <div class="level-card resistance"><div class="level-title">R4</div><div class="price-value" id="daily-r4">-</div></div>
+                            <div class="level-card resistance"><div class="level-title">R3</div><div class="price-value" id="daily-r3">-</div></div>
+                            <div class="level-card resistance"><div class="level-title">R2</div><div class="price-value" id="daily-r2">-</div></div>
+                            <div class="level-card resistance"><div class="level-title">R1</div><div class="price-value" id="daily-r1">-</div></div>
+                </div>
+                        <div class="level-row pivot-row">
+                            <div class="level-card pivot"><div class="level-title">Current Price</div><div class="price-value" id="daily-pivot">-</div></div>
+                </div>
+                        <div class="level-row">
+                            <div class="level-card support"><div class="level-title">S1</div><div class="price-value" id="daily-s1">-</div></div>
+                            <div class="level-card support"><div class="level-title">S2</div><div class="price-value" id="daily-s2">-</div></div>
+                            <div class="level-card support"><div class="level-title">S3</div><div class="price-value" id="daily-s3">-</div></div>
+                            <div class="level-card support"><div class="level-title">S4</div><div class="price-value" id="daily-s4">-</div></div>
+                </div>
+                </div>
+                    <div class="data-info">
+                        <div class="info-item">
+                            <span class="info-label">High:</span>
+                            <span class="info-value" id="daily-high">-</span>
+                </div>
+                        <div class="info-item">
+                            <span class="info-label">Low:</span>
+                            <span class="info-value" id="daily-low">-</span>
+                </div>
+                        <div class="info-item">
+                            <span class="info-label">Close:</span>
+                            <span class="info-value" id="daily-close">-</span>
+            </div>
+                    </div>
+                    <div class="suggestion-box" id="daily-suggestion">-</div>
+        </div>
+        
+        <!-- Weekly Content -->
+        <div id="weekly-content" class="timeframe-content">
+                    <div class="levels-grid-new">
+                        <div class="level-row">
+                            <div class="level-card resistance"><div class="level-title">R4</div><div class="price-value" id="weekly-r4">-</div></div>
+                            <div class="level-card resistance"><div class="level-title">R3</div><div class="price-value" id="weekly-r3">-</div></div>
+                            <div class="level-card resistance"><div class="level-title">R2</div><div class="price-value" id="weekly-r2">-</div></div>
+                            <div class="level-card resistance"><div class="level-title">R1</div><div class="price-value" id="weekly-r1">-</div></div>
+                </div>
+                        <div class="level-row pivot-row">
+                            <div class="level-card pivot"><div class="level-title">Current Price</div><div class="price-value" id="weekly-pivot">-</div></div>
+                </div>
+                        <div class="level-row">
+                            <div class="level-card support"><div class="level-title">S1</div><div class="price-value" id="weekly-s1">-</div></div>
+                            <div class="level-card support"><div class="level-title">S2</div><div class="price-value" id="weekly-s2">-</div></div>
+                            <div class="level-card support"><div class="level-title">S3</div><div class="price-value" id="weekly-s3">-</div></div>
+                            <div class="level-card support"><div class="level-title">S4</div><div class="price-value" id="weekly-s4">-</div></div>
+                </div>
+                </div>
+                    <div class="data-info">
+                        <div class="info-item">
+                            <span class="info-label">High:</span>
+                            <span class="info-value" id="weekly-high">-</span>
+                </div>
+                        <div class="info-item">
+                            <span class="info-label">Low:</span>
+                            <span class="info-value" id="weekly-low">-</span>
+                </div>
+                        <div class="info-item">
+                            <span class="info-label">Close:</span>
+                            <span class="info-value" id="weekly-close">-</span>
+            </div>
+                    </div>
+                    <div class="suggestion-box" id="weekly-suggestion">-</div>
+        </div>
+        
+        <!-- Monthly Content -->
+        <div id="monthly-content" class="timeframe-content">
+                    <div class="levels-grid-new">
+                        <div class="level-row">
+                            <div class="level-card resistance"><div class="level-title">R4</div><div class="price-value" id="monthly-r4">-</div></div>
+                            <div class="level-card resistance"><div class="level-title">R3</div><div class="price-value" id="monthly-r3">-</div></div>
+                            <div class="level-card resistance"><div class="level-title">R2</div><div class="price-value" id="monthly-r2">-</div></div>
+                            <div class="level-card resistance"><div class="level-title">R1</div><div class="price-value" id="monthly-r1">-</div></div>
+                </div>
+                        <div class="level-row pivot-row">
+                            <div class="level-card pivot"><div class="level-title">Current Price</div><div class="price-value" id="monthly-pivot">-</div></div>
+                </div>
+                        <div class="level-row">
+                            <div class="level-card support"><div class="level-title">S1</div><div class="price-value" id="monthly-s1">-</div></div>
+                            <div class="level-card support"><div class="level-title">S2</div><div class="price-value" id="monthly-s2">-</div></div>
+                            <div class="level-card support"><div class="level-title">S3</div><div class="price-value" id="monthly-s3">-</div></div>
+                            <div class="level-card support"><div class="level-title">S4</div><div class="price-value" id="monthly-s4">-</div></div>
+                </div>
+                </div>
+                    <div class="data-info">
+                        <div class="info-item">
+                            <span class="info-label">High:</span>
+                            <span class="info-value" id="monthly-high">-</span>
+                </div>
+                        <div class="info-item">
+                            <span class="info-label">Low:</span>
+                            <span class="info-value" id="monthly-low">-</span>
+                </div>
+                        <div class="info-item">
+                            <span class="info-label">Close:</span>
+                            <span class="info-value" id="monthly-close">-</span>
+            </div>
+                    </div>
+                    <div class="suggestion-box" id="monthly-suggestion">-</div>
+                </div>
+                <!-- Yearly Content -->
+                <div id="yearly-content" class="timeframe-content">
+                    <div class="levels-grid-new">
+                        <div class="level-row">
+                            <div class="level-card resistance"><div class="level-title">R4</div><div class="price-value" id="yearly-r4">-</div></div>
+                            <div class="level-card resistance"><div class="level-title">R3</div><div class="price-value" id="yearly-r3">-</div></div>
+                            <div class="level-card resistance"><div class="level-title">R2</div><div class="price-value" id="yearly-r2">-</div></div>
+                            <div class="level-card resistance"><div class="level-title">R1</div><div class="price-value" id="yearly-r1">-</div></div>
+                        </div>
+                        <div class="level-row pivot-row">
+                            <div class="level-card pivot"><div class="level-title">Current Price</div><div class="price-value" id="yearly-pivot">-</div></div>
+                        </div>
+                        <div class="level-row">
+                            <div class="level-card support"><div class="level-title">S1</div><div class="price-value" id="yearly-s1">-</div></div>
+                            <div class="level-card support"><div class="level-title">S2</div><div class="price-value" id="yearly-s2">-</div></div>
+                            <div class="level-card support"><div class="level-title">S3</div><div class="price-value" id="yearly-s3">-</div></div>
+                            <div class="level-card support"><div class="level-title">S4</div><div class="price-value" id="yearly-s4">-</div></div>
+                        </div>
+                    </div>
+                    <div class="data-info">
+                        <div class="info-item">
+                            <span class="info-label">High:</span>
+                            <span class="info-value" id="yearly-high">-</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Low:</span>
+                            <span class="info-value" id="yearly-low">-</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Close:</span>
+                            <span class="info-value" id="yearly-close">-</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Pivot:</span>
+                            <span class="info-value" id="yearly-pivot-info">-</span>
+                        </div>
+                    </div>
+                    <div class="suggestion-box" id="yearly-suggestion">-</div>
+                </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Data Management Buttons -->
+        <div class="data-controls">
+            <button class="control-btn" onclick="exportData()">📊 Export Data</button>
+        </div>
+        
+        <!-- Comparison Table -->
+        <div class="comparison-table">
+            <h3>📊 Comparison Table</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Level</th>
+                        <th>Daily</th>
+                        <th>Weekly</th>
+                        <th>Monthly</th>
+                        <th>Yearly</th>
+                    </tr>
+                </thead>
+                <tbody id="comparisonTable">
+                    <tr><td colspan="5">Loading...</td></tr>
+                </tbody>
+            </table>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html> 
