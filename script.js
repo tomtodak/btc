@@ -27,18 +27,18 @@ class MultiTimeframeBTCCalculator {
     
     async getCurrentPrice() {
         try {
-            // Use CoinGecko for more accurate global market price
-            const response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd');
-            const data = await response.json();
-            this.currentPrice = parseFloat(data.bitcoin.usd);
-            this.updateStatus('Current price loaded successfully', 'success');
-        } catch (error) {
-            // Fallback to Binance if CoinGecko fails
-            try {
+            // Use Binance API as primary source (more reliable, no CORS issues)
                 const binanceResponse = await fetch('https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT');
                 const binanceData = await binanceResponse.json();
                 this.currentPrice = parseFloat(binanceData.price);
-                this.updateStatus('Current price loaded from Binance (fallback)', 'success');
+            this.updateStatus('Current price loaded successfully', 'success');
+        } catch (error) {
+            // Fallback to CoinGecko if Binance fails
+            try {
+                const response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd');
+                const data = await response.json();
+                this.currentPrice = parseFloat(data.bitcoin.usd);
+                this.updateStatus('Current price loaded from CoinGecko (fallback)', 'success');
             } catch (fallbackError) {
                 this.updateStatus('Error loading current price', 'error');
             }
@@ -384,13 +384,20 @@ class MultiTimeframeBTCCalculator {
     }
     
     updateChart(timeframe) {
-        if (!btcChart) return;
+        if (!window.btcChart) {
+            console.log('Chart not available');
+            return;
+        }
         
         const data = this.timeframes[timeframe];
-        if (!data || !data.coinGeckoData) return;
+        if (!data || !data.coinGeckoData) {
+            console.log('No data available for chart update');
+            return;
+        }
         
+        try {
         // Generate candlestick data from CoinGecko data
-        const candlestickData = btcChart.generateCandlestickData(data.coinGeckoData, timeframe);
+            const candlestickData = window.btcChart.generateCandlestickData(data.coinGeckoData, timeframe);
         
         // Get support and resistance levels
         const supportLevels = [
@@ -408,7 +415,14 @@ class MultiTimeframeBTCCalculator {
         ].filter(level => level > 0);
         
         // Update chart
-        btcChart.setData(candlestickData, supportLevels, resistanceLevels, this.currentPrice, timeframe);
+            if (typeof window.btcChart.setData === 'function') {
+                window.btcChart.setData(candlestickData, supportLevels, resistanceLevels, this.currentPrice, timeframe);
+            } else {
+                console.log('Chart setData method not available');
+            }
+        } catch (error) {
+            console.log('Chart update error:', error);
+        }
     }
     
     updateComparisonTable() {
@@ -698,11 +712,22 @@ class MultiTimeframeBTCCalculator {
                 const highlightSold = sellVol > buyVol;
                 const mostBoughtStyle = highlightBought ? 'color:#16c784;font-weight:bold;' : '';
                 const mostSoldStyle = highlightSold ? 'color:#ff4b4b;font-weight:bold;' : '';
+                // Add color styling for SR, VT, HV suggestions
+                const getSuggestionColor = (suggestion) => {
+                    if (suggestion === 'BUY') return 'color:#16c784;font-weight:bold;';
+                    if (suggestion === 'SELL' || suggestion === 'LOCK PROFIT') return 'color:#ff4b4b;font-weight:bold;';
+                    return 'color:#ffffff;font-weight:bold;';
+                };
+                
+                const srColor = getSuggestionColor(srSuggestion);
+                const vtColor = getSuggestionColor(vtSuggestion);
+                const hvColor = getSuggestionColor(hvSuggestion);
+                
                 info = `
                     ${taTarget}
-                    <div><b>SR</b>: ${srSuggestion}</div>
-                    <div><b>VT</b>: ${vtSuggestion}</div>
-                    <div><b>HV</b>: ${hvSuggestion}</div>
+                    <div><b>SR</b>: <span style="${srColor}">${srSuggestion}</span></div>
+                    <div><b>VT</b>: <span style="${vtColor}">${vtSuggestion}</span></div>
+                    <div><b>HV</b>: <span style="${hvColor}">${hvSuggestion}</span></div>
                     <div style="margin-top:8px;">Current Price: <b>${window.formatPrice ? window.formatPrice(current) : current}</b></div>
                     <div style='${mostBoughtStyle}'>Most Bought: <b>${window.formatPrice ? window.formatPrice(data.high) : data.high}</b></div>
                     <div style='${mostSoldStyle}'>Most Sold: <b>${window.formatPrice ? window.formatPrice(data.low) : data.low}</b></div>
@@ -766,7 +791,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (chartCanvas) chartCanvas.style.display = 'none';
                 if (summaryCards) summaryCards.style.display = 'none';
                 if (converterWrapper) converterWrapper.style.display = 'none';
-            } else { // Default to chart if not summary, converter, or calculator
+            } else if (timeframe === 'reference') {
+                if (chartCanvas) chartCanvas.style.display = 'none';
+                if (summaryCards) summaryCards.style.display = 'none';
+                if (converterWrapper) converterWrapper.style.display = 'none';
+            } else { // Default to chart if not summary, converter, calculator, or reference
                 if (chartCanvas) chartCanvas.style.display = 'block';
                 if (summaryCards) summaryCards.style.display = 'none';
                 if (converterWrapper) converterWrapper.style.display = 'none';
@@ -784,8 +813,8 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function updateChartWithTimeframe(timeframe) {
-    // Prevent chart update if calculator tab is active
-    if (timeframe === 'calculator') return;
+    // Prevent chart update if calculator or reference tab is active
+    if (timeframe === 'calculator' || timeframe === 'reference') return;
     // Update chart S/R lines based on selected timeframe
     if (window.btcChart && window.calculator) {
         // Update current timeframe
@@ -847,7 +876,8 @@ let converterRates = {
 async function fetchConverterRates() {
     try {
         console.log('Fetching exchange rates...');
-        const res = await fetch('https://api.exchangerate.host/latest?base=USD&symbols=MYR,CNY,IDR');
+        // Use exchangerate-api.com which doesn't require API key
+        const res = await fetch('https://api.exchangerate-api.com/v4/latest/USD');
         
         if (!res.ok) {
             throw new Error(`HTTP ${res.status}: ${res.statusText}`);
@@ -856,14 +886,10 @@ async function fetchConverterRates() {
         const data = await res.json();
         console.log('Exchange rates response:', data);
         
-        if (data.success === false) {
-            throw new Error(data.error?.info || 'API returned error');
-        }
-        
         converterRates.MYR = data.rates.MYR;
         converterRates.CNY = data.rates.CNY;
         converterRates.IDR = data.rates.IDR;
-        window.converterRates = converterRates; // <-- ensure global
+        window.converterRates = converterRates;
         
         console.log('Rates loaded:', converterRates);
         updateConverterRateInfo();
@@ -875,11 +901,14 @@ async function fetchConverterRates() {
         converterRates.MYR = 4.25;
         converterRates.CNY = 7.20;
         converterRates.IDR = 15800;
-        window.converterRates = converterRates; // <-- ensure global fallback
+        window.converterRates = converterRates;
         
-        document.getElementById('converter-rate-info').innerHTML = 
+        const rateInfo = document.getElementById('converter-rate-info');
+        if (rateInfo) {
+            rateInfo.innerHTML = 
             'Using fallback rates (live rates unavailable)<br>' +
             '<small>1 USD = 4.25 MYR | 7.20 CNY | 15,800 IDR</small>';
+        }
     }
 }
 
@@ -933,7 +962,7 @@ window.currencyRates = currencyRates;
 
 async function fetchCurrencyRates() {
     try {
-        const res = await fetch('https://api.exchangerate.host/latest?base=USD&symbols=MYR');
+        const res = await fetch('https://api.exchangerate-api.com/v4/latest/USD');
         const data = await res.json();
         currencyRates.MYR = data.rates.MYR;
         // Update global currency rates for chart
@@ -1051,14 +1080,14 @@ function updateComparisonTableCurrency() {
 function updateSummaryTabCurrency() {
     const timeframes = ['daily', 'weekly', 'monthly', 'yearly'];
     timeframes.forEach(tf => {
-        const data = this.timeframes[tf];
+        const data = window.calculator?.timeframes?.[tf];
         const levels = data.levels;
         let srSuggestion = '-', vtSuggestion = '-', taSuggestion = '-';
         let taTarget = '';
         let hvSuggestion = '-';
         let info = '';
         if (levels && data.high && data.low && data.close) {
-            const current = this.currentPrice;
+            const current = window.calculator?.currentPrice || 0;
 
             // SR suggestion
             if (current <= levels.s1 * 1.01) {
@@ -1142,11 +1171,22 @@ function updateSummaryTabCurrency() {
             const highlightSold = sellVol > buyVol;
             const mostBoughtStyle = highlightBought ? 'color:#16c784;font-weight:bold;' : '';
             const mostSoldStyle = highlightSold ? 'color:#ff4b4b;font-weight:bold;' : '';
+            // Add color styling for SR, VT, HV suggestions
+            const getSuggestionColor = (suggestion) => {
+                if (suggestion === 'BUY') return 'color:#16c784;font-weight:bold;';
+                if (suggestion === 'SELL' || suggestion === 'LOCK PROFIT') return 'color:#ff4b4b;font-weight:bold;';
+                return 'color:#ffffff;font-weight:bold;';
+            };
+            
+            const srColor = getSuggestionColor(srSuggestion);
+            const vtColor = getSuggestionColor(vtSuggestion);
+            const hvColor = getSuggestionColor(hvSuggestion);
+            
             info = `
                 ${taTarget}
-                <div><b>SR</b>: ${srSuggestion}</div>
-                <div><b>VT</b>: ${vtSuggestion}</div>
-                <div><b>HV</b>: ${hvSuggestion}</div>
+                <div><b>SR</b>: <span style="${srColor}">${srSuggestion}</span></div>
+                <div><b>VT</b>: <span style="${vtColor}">${vtSuggestion}</span></div>
+                <div><b>HV</b>: <span style="${hvColor}">${hvSuggestion}</span></div>
                 <div style="margin-top:8px;">Current Price: <b>${window.formatPrice ? window.formatPrice(current) : current}</b></div>
                 <div style='${mostBoughtStyle}'>Most Bought: <b>${window.formatPrice ? window.formatPrice(data.high) : data.high}</b></div>
                 <div style='${mostSoldStyle}'>Most Sold: <b>${window.formatPrice ? window.formatPrice(data.low) : data.low}</b></div>
