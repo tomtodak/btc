@@ -752,6 +752,164 @@ class MultiTimeframeBTCCalculator {
             // Papar next target/support TA di bawah, kemudian SR & VT & HV, kemudian info harga
             document.getElementById(`summary-${tf}-info`).innerHTML = info;
         });
+        
+        // Add Main Suggestion Analysis
+        this.updateMainSuggestion();
+        
+        // Add Chinese Zodiac Analysis
+        this.updateChineseZodiacAnalysis();
+    }
+    
+    updateMainSuggestion() {
+        const timeframes = ['daily', 'weekly', 'monthly', 'yearly'];
+        const weights = { monthly: 0.45, yearly: 0.18, daily: 0.30, weekly: 0.07 }; // Weighted voting
+        
+        let totalScore = 0;
+        let totalWeight = 0;
+        
+        timeframes.forEach(tf => {
+            const data = this.timeframes[tf];
+            if (!data || !data.levels || !data.high || !data.low || !data.close) return;
+            
+            const levels = data.levels;
+            const current = this.currentPrice;
+            let srSuggestion = '-', vtSuggestion = '-', hvSuggestion = '-', taSuggestion = '-';
+            
+            // SR suggestion
+            if (current <= levels.s1 * 1.01) {
+                srSuggestion = 'BUY';
+            } else if (current >= levels.r1 * 0.99) {
+                srSuggestion = 'SELL';
+            } else {
+                srSuggestion = 'HOLD';
+            }
+            
+            // VT suggestion (ikut converter logic)
+            if (Math.abs(current - data.high) < Math.abs(current - data.low)) {
+                if (Math.abs(current - data.high) < 1) {
+                    vtSuggestion = 'HOLD';
+                } else if (data.high > current) {
+                    vtSuggestion = 'LOCK PROFIT';
+                } else {
+                    vtSuggestion = 'BUY';
+                }
+            } else {
+                if (data.low > current) {
+                    vtSuggestion = 'SELL';
+                } else {
+                    vtSuggestion = 'BUY';
+                }
+            }
+            
+            // HV suggestion (ikut converter logic)
+            let highVolumeBuy = data.volumeData?.[data.high]?.buy || 0;
+            let highVolumeSell = data.volumeData?.[data.low]?.sell || 0;
+            if (highVolumeBuy > highVolumeSell) {
+                hvSuggestion = 'BUY';
+            } else if (highVolumeSell > highVolumeBuy) {
+                hvSuggestion = 'SELL';
+            } else {
+                hvSuggestion = 'HOLD';
+            }
+            
+            // Combine TA logic (majority) - sama seperti converter
+            const signals = [srSuggestion, vtSuggestion, hvSuggestion];
+            const buyCount = signals.filter(s => s.includes('BUY')).length;
+            const sellCount = signals.filter(s => s.includes('SELL')).length;
+            if (buyCount >= 2) taSuggestion = 'BUY';
+            else if (sellCount >= 2) taSuggestion = 'SELL';
+            else taSuggestion = 'HOLD';
+            
+            // Calculate weighted score
+            let score = 0;
+            if (taSuggestion === 'BUY') score = 1;
+            else if (taSuggestion === 'SELL' || taSuggestion === 'LOCK PROFIT') score = -1;
+            else score = 0;
+            
+            totalScore += score * weights[tf];
+            totalWeight += weights[tf];
+        });
+        
+        // Calculate main suggestion based on weighted average
+        let mainSuggestion = 'HOLD';
+        if (totalWeight > 0) {
+            const averageScore = totalScore / totalWeight;
+            if (averageScore >= 0.3) {
+                mainSuggestion = 'BUY';
+            } else if (averageScore <= -0.3) {
+                mainSuggestion = 'SELL';
+            }
+        }
+        
+        // Update main suggestion display
+        const mainElement = document.getElementById('summary-main-suggestion');
+        mainElement.textContent = mainSuggestion;
+        
+        // Color coding
+        if (mainSuggestion === 'BUY') {
+            mainElement.style.color = '#16c784'; // Green
+        } else if (mainSuggestion === 'SELL') {
+            mainElement.style.color = '#ff4b4b'; // Red
+        } else {
+            mainElement.style.color = '#ffffff'; // White
+        }
+    }
+    
+    updateChineseZodiacAnalysis() {
+        const currentYear = new Date().getFullYear();
+        
+        // Chinese Zodiac cycle: Rat, Ox, Tiger, Rabbit, Dragon, Snake, Horse, Goat, Monkey, Rooster, Dog, Pig
+        // Rat allies: Ox, Dragon, Monkey
+        
+        // Function to determine Chinese zodiac animal for a given year
+        const getChineseZodiac = (year) => {
+            const zodiacAnimals = ['Rat', 'Ox', 'Tiger', 'Rabbit', 'Dragon', 'Snake', 'Horse', 'Goat', 'Monkey', 'Rooster', 'Dog', 'Pig'];
+            const startYear = 1900; // Rat year
+            const index = (year - startYear) % 12;
+            return zodiacAnimals[index];
+        };
+        
+        const currentZodiac = getChineseZodiac(currentYear);
+        let zodiacSuggestion = '-';
+        let zodiacInfo = '';
+        
+        if (currentZodiac === 'Rat') {
+            zodiacSuggestion = 'THE BEST YEAR';
+            zodiacInfo = `
+                <div>Current Year: <b>${currentZodiac} Year</b></div>
+                <div style="margin-top:8px;">A rare window of opportunity — the kind of year where smart moves can lead to significant gains.</div>
+            `;
+        } else if (currentZodiac === 'Ox' || currentZodiac === 'Dragon' || currentZodiac === 'Monkey') {
+            zodiacSuggestion = 'GOOD YEAR';
+            zodiacInfo = `
+                <div>Current Year: <b>${currentZodiac} Year</b></div>
+                <div style="margin-top:8px;">A good year to grow your portfolio with confidence.</div>
+            `;
+        } else {
+            zodiacSuggestion = 'NEUTRAL YEAR';
+            zodiacInfo = `
+                <div>Current Year: <b>${currentZodiac} Year</b></div>
+                <div style="margin-top:8px;">A steady outlook — stay informed and adjust as needed.</div>
+            `;
+        }
+        
+        // Update zodiac suggestion with color coding
+        const zodiacElement = document.getElementById('summary-zodiac-suggestion');
+        zodiacElement.textContent = zodiacSuggestion;
+        
+        if (zodiacSuggestion === 'THE BEST YEAR') {
+            zodiacElement.style.color = '#16c784'; // Green
+            zodiacElement.style.fontWeight = 'bold';
+        } else if (zodiacSuggestion === 'GOOD YEAR') {
+            zodiacElement.style.color = '#16c784'; // Green (same as best year)
+            zodiacElement.style.fontWeight = 'bold';
+        } else {
+            zodiacElement.style.color = '#ffffff'; // White
+            zodiacElement.style.fontWeight = 'normal';
+        }
+        
+        // Update zodiac info
+        document.getElementById('summary-zodiac-info').innerHTML = zodiacInfo;
     }
 }
 
@@ -1944,3 +2102,23 @@ document.addEventListener('DOMContentLoaded', function() {
     updateAllCurrencyDisplays(); // Update displays with initial currency
     updateCurrencyButtonStates(); // Update currency button states
 }); 
+
+function calculateBTCMultiCurrency() {
+    const btc = parseFloat(document.getElementById('btc-amount').value) || 0;
+    const price = parseFloat(document.getElementById('btc-price').value) || 0;
+
+    // Guna live rates jika ada, fallback jika tiada
+    const myrRate = window.converterRates?.MYR || 4.25;
+    const idrRate = window.converterRates?.IDR || 15800;
+    const cnyRate = window.converterRates?.CNY || 7.2;
+
+    const usd = btc * price;
+    const myr = usd * myrRate;
+    const idr = usd * idrRate;
+    const cny = usd * cnyRate;
+
+    document.getElementById('calc-usd').textContent = `$${usd.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}`;
+    document.getElementById('calc-myr').textContent = `RM ${myr.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}`;
+    document.getElementById('calc-idr').textContent = `Rp ${idr.toLocaleString(undefined, {maximumFractionDigits:0})}`;
+    document.getElementById('calc-cny').textContent = `¥${cny.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}`;
+}

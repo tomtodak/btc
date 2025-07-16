@@ -1415,3 +1415,169 @@ body {
   font-size: 0.95em;
   margin-top: 2px;
 } 
+
+.zodiac-info {
+  font-size: 0.98em;
+  margin-top: 12px;
+  margin-bottom: 0;
+  white-space: normal !important;
+  overflow: visible !important;
+  text-overflow: unset !important;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  line-height: 1.4;
+} 
+
+.zodiac-section {
+  display: flex;
+  justify-content: center;
+  margin-top: 20px;
+  width: 100%;
+}
+
+.zodiac-card {
+  width: 100%;
+  max-width: 600px;
+  min-width: 400px;
+  margin: 0 auto;
+  background: rgba(255,255,255,0.1) !important;
+  border: 2px solid rgba(255,255,255,0.2) !important;
+  border-radius: 15px !important;
+}
+
+@media (max-width: 768px) {
+  .zodiac-card {
+    max-width: 100%;
+    min-width: 0;
+  }
+} 
+
+.main-suggestion-section {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 30px;
+  width: 100%;
+}
+
+.main-suggestion-card {
+  background: rgba(255,255,255,0.1);
+  border-radius: 15px;
+  border: 2px solid rgba(255,255,255,0.2);
+  padding: 20px 30px;
+  text-align: center;
+  max-width: 500px;
+  width: 100%;
+}
+
+.main-suggestion-label {
+  font-size: 14px;
+  color: #ccc;
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+
+.main-suggestion-value {
+  font-size: 32px;
+  font-weight: bold;
+  color: #fff;
+}
+
+@media (max-width: 768px) {
+  .main-suggestion-card {
+    max-width: 100%;
+    padding: 15px 20px;
+  }
+  
+  .main-suggestion-value {
+    font-size: 28px;
+  }
+} 
+
+.btc-calculator {
+  margin-top: 10px;
+  padding: 15px 10px;
+  background: rgba(255,255,255,0.05);
+  border-radius: 10px;
+  border: 1.5px solid rgba(255,255,255,0.15);
+  text-align: left;
+  max-width: 350px;
+}
+
+.calc-input-group {
+  margin-bottom: 10px;
+}
+
+.calc-input-group label {
+  display: block;
+  font-size: 1em;
+  color: #ffe066;
+  margin-bottom: 3px;
+  font-weight: 600;
+}
+
+.calc-input-group input {
+  width: 100%;
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  font-size: 1em;
+  margin-bottom: 5px;
+}
+
+.calc-btn {
+  width: 100%;
+  padding: 8px 0;
+  background: #ffe066;
+  color: #222;
+  border: none;
+  border-radius: 6px;
+  font-weight: bold;
+  font-size: 1em;
+  margin-bottom: 10px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.calc-btn:hover {
+  background: #ffd700;
+}
+
+.calc-results {
+  margin-top: 10px;
+}
+
+.calc-result {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
+.currency-label {
+  font-weight: 600;
+  color: #fff;
+}
+
+.currency-value {
+  font-weight: 600;
+  color: #ffe066;
+} 
+
+function calculateBTCMultiCurrency() {
+    const btc = parseFloat(document.getElementById('btc-amount').value) || 0;
+    const price = parseFloat(document.getElementById('btc-price').value) || 0;
+
+    // Guna live rates jika ada, fallback jika tiada
+    const myrRate = window.converterRates?.MYR || 4.25;
+    const idrRate = window.converterRates?.IDR || 15800;
+    const cnyRate = window.converterRates?.CNY || 7.2;
+
+    const usd = btc * price;
+    const myr = usd * myrRate;
+    const idr = usd * idrRate;
+    const cny = usd * cnyRate;
+
+    document.getElementById('calc-usd').textContent = `$${usd.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}`;
+    document.getElementById('calc-myr').textContent = `RM ${myr.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}`;
+    document.getElementById('calc-idr').textContent = `Rp ${idr.toLocaleString(undefined, {maximumFractionDigits:0})}`;
+    document.getElementById('calc-cny').textContent = `¥${cny.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}`;
+} 
