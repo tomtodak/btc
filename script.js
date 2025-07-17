@@ -766,6 +766,7 @@ class MultiTimeframeBTCCalculator {
         
         let totalScore = 0;
         let totalWeight = 0;
+        let trendAnalysis = { uptrend: 0, downtrend: 0, neutral: 0 }; // Track trend signals
         
         timeframes.forEach(tf => {
             const data = this.timeframes[tf];
@@ -773,7 +774,7 @@ class MultiTimeframeBTCCalculator {
             
             const levels = data.levels;
             const current = this.currentPrice;
-            let srSuggestion = '-', vtSuggestion = '-', hvSuggestion = '-', taSuggestion = '-';
+            let srSuggestion = '-', vtSuggestion = '-', hvSuggestion = '-', trendSuggestion = '-', taSuggestion = '-';
             
             // SR suggestion
             if (current <= levels.s1 * 1.01) {
@@ -812,46 +813,97 @@ class MultiTimeframeBTCCalculator {
                 hvSuggestion = 'HOLD';
             }
             
-            // Combine TA logic (majority) - sama seperti converter
-            const signals = [srSuggestion, vtSuggestion, hvSuggestion];
+            // === NEW: Simplified Trend Analysis Logic ===
+            // Calculate percentage difference from Most Bought and Most Sold
+            const mostBoughtPrice = data.high;
+            const mostSoldPrice = data.low;
+            
+            if (mostBoughtPrice > 0 && mostSoldPrice > 0) {
+                const currentToBoughtPercent = ((current - mostBoughtPrice) / mostBoughtPrice) * 100;
+                const currentToSoldPercent = ((current - mostSoldPrice) / mostSoldPrice) * 100;
+                
+                // Logic: If current price is within 5% above Most Bought → UPTREND
+                if (currentToBoughtPercent >= -5 && currentToBoughtPercent <= 5) {
+                    trendSuggestion = 'BUY'; // Uptrend signal
+                    trendAnalysis.uptrend += weights[tf]; // Add weighted score for uptrend
+                }
+                // Logic: If current price is below 5% from Most Sold → DOWNTREND
+                else if (currentToSoldPercent <= -5) {
+                    trendSuggestion = 'SELL'; // Downtrend signal
+                    trendAnalysis.downtrend += weights[tf]; // Add weighted score for downtrend
+                }
+                // Logic: If not uptrend or downtrend → NEUTRAL
+                else {
+                    trendSuggestion = 'HOLD'; // Neutral signal
+                    trendAnalysis.neutral += weights[tf]; // Add weighted score for neutral
+                }
+        } else {
+                trendSuggestion = 'HOLD';
+                trendAnalysis.neutral += weights[tf];
+            }
+            
+            // Combine TA logic (majority) - now includes trend analysis
+            const signals = [srSuggestion, vtSuggestion, hvSuggestion, trendSuggestion];
             const buyCount = signals.filter(s => s.includes('BUY')).length;
             const sellCount = signals.filter(s => s.includes('SELL')).length;
             if (buyCount >= 2) taSuggestion = 'BUY';
             else if (sellCount >= 2) taSuggestion = 'SELL';
             else taSuggestion = 'HOLD';
-            
+
             // Calculate weighted score
-            let score = 0;
-            if (taSuggestion === 'BUY') score = 1;
-            else if (taSuggestion === 'SELL' || taSuggestion === 'LOCK PROFIT') score = -1;
-            else score = 0;
-            
-            totalScore += score * weights[tf];
-            totalWeight += weights[tf];
+        let score = 0;
+        if (taSuggestion === 'BUY') score = 1;
+        else if (taSuggestion === 'SELL' || taSuggestion === 'LOCK PROFIT') score = -1;
+        else score = 0;
+        
+        totalScore += score * weights[tf];
+        totalWeight += weights[tf];
         });
         
         // Calculate main suggestion based on weighted average
         let mainSuggestion = 'HOLD';
-        if (totalWeight > 0) {
-            const averageScore = totalScore / totalWeight;
-            if (averageScore >= 0.3) {
+    if (totalWeight > 0) {
+        const averageScore = totalScore / totalWeight;
+        if (averageScore >= 0.3) {
                 mainSuggestion = 'BUY';
-            } else if (averageScore <= -0.3) {
+        } else if (averageScore <= -0.3) {
                 mainSuggestion = 'SELL';
             }
         }
         
-        // Update main suggestion display
-        const mainElement = document.getElementById('summary-main-suggestion');
-        mainElement.textContent = mainSuggestion;
+        // === NEW: Determine dominant trend for display ===
+        let dominantTrend = 'NEUTRAL';
+        let trendColor = '#ffffff'; // White for neutral
         
-        // Color coding
-        if (mainSuggestion === 'BUY') {
-            mainElement.style.color = '#16c784'; // Green
-        } else if (mainSuggestion === 'SELL') {
-            mainElement.style.color = '#ff4b4b'; // Red
-        } else {
-            mainElement.style.color = '#ffffff'; // White
+        // Find the highest weighted trend
+        if (trendAnalysis.uptrend > trendAnalysis.downtrend && trendAnalysis.uptrend > trendAnalysis.neutral) {
+            dominantTrend = 'UPTREND';
+            trendColor = '#16c784'; // Green for uptrend
+        } else if (trendAnalysis.downtrend > trendAnalysis.uptrend && trendAnalysis.downtrend > trendAnalysis.neutral) {
+            dominantTrend = 'DOWNTREND';
+            trendColor = '#ff4b4b'; // Red for downtrend
+            } else {
+            dominantTrend = 'NEUTRAL';
+            trendColor = '#ffffff'; // White for neutral
+        }
+        
+        // Update main suggestion display with trend information
+        const mainElement = document.getElementById('summary-main-suggestion');
+        if (mainElement) {
+            // Display both main suggestion and trend
+            mainElement.innerHTML = `
+                <div style="font-size: 1.2em; font-weight: bold; margin-bottom: 5px;">${mainSuggestion}</div>
+                <div style="font-size: 0.6em; color: ${trendColor}; font-weight: bold;">${dominantTrend}</div>
+            `;
+            
+            // Color coding for main suggestion
+            if (mainSuggestion === 'BUY') {
+                mainElement.style.color = '#16c784'; // Green
+            } else if (mainSuggestion === 'SELL') {
+                mainElement.style.color = '#ff4b4b'; // Red
+            } else {
+                mainElement.style.color = '#ffffff'; // White
+            }
         }
     }
     
@@ -1639,6 +1691,7 @@ function updateConverterTASuggestion() {
     
     let totalScore = 0;
     let totalWeight = 0;
+    let trendAnalysis = { uptrend: 0, downtrend: 0, neutral: 0 }; // Track trend signals
     
     timeframes.forEach(tf => {
         const data = window.calculator?.timeframes?.[tf];
@@ -1647,7 +1700,7 @@ function updateConverterTASuggestion() {
         
         const levels = data.levels;
         const current = window.calculator?.currentPrice || 0;
-        let srSuggestion = '-', vtSuggestion = '-', hvSuggestion = '-', taSuggestion = '-';
+        let srSuggestion = '-', vtSuggestion = '-', hvSuggestion = '-', trendSuggestion = '-', taSuggestion = '-';
         
         // SR suggestion
         if (current <= levels.s1 * 1.01) {
@@ -1686,8 +1739,37 @@ function updateConverterTASuggestion() {
             hvSuggestion = 'HOLD';
         }
         
-        // Combine TA logic (majority)
-        const signals = [srSuggestion, vtSuggestion, hvSuggestion];
+        // === NEW: Trend Analysis Logic for Converter ===
+        // Calculate percentage difference from Most Bought and Most Sold
+        const mostBoughtPrice = data.high;
+        const mostSoldPrice = data.low;
+        
+        if (mostBoughtPrice > 0 && mostSoldPrice > 0) {
+            const currentToBoughtPercent = ((current - mostBoughtPrice) / mostBoughtPrice) * 100;
+            const currentToSoldPercent = ((current - mostSoldPrice) / mostSoldPrice) * 100;
+            
+            // Logic: If current price is within 5% above Most Bought → UPTREND
+            if (currentToBoughtPercent >= -5 && currentToBoughtPercent <= 5) {
+                trendSuggestion = 'BUY'; // Uptrend signal
+                trendAnalysis.uptrend += weights[tf]; // Add weighted score for uptrend
+            }
+            // Logic: If current price is below 5% from Most Sold → DOWNTREND
+            else if (currentToSoldPercent <= -5) {
+                trendSuggestion = 'SELL'; // Downtrend signal
+                trendAnalysis.downtrend += weights[tf]; // Add weighted score for downtrend
+            }
+            // Logic: If not uptrend or downtrend → NEUTRAL
+            else {
+                trendSuggestion = 'HOLD'; // Neutral signal
+                trendAnalysis.neutral += weights[tf]; // Add weighted score for neutral
+            }
+        } else {
+            trendSuggestion = 'HOLD';
+            trendAnalysis.neutral += weights[tf];
+        }
+        
+        // Combine TA logic (majority) - now includes trend analysis
+        const signals = [srSuggestion, vtSuggestion, hvSuggestion, trendSuggestion];
         const buyCount = signals.filter(s => s.includes('BUY')).length;
         const sellCount = signals.filter(s => s.includes('SELL')).length;
         if (buyCount >= 2) taSuggestion = 'BUY';
@@ -1726,13 +1808,41 @@ function updateConverterTASuggestion() {
         }
     }
     
-    // Update combined TA display
+    // === NEW: Determine dominant trend for converter display ===
+    let dominantTrend = 'NEUTRAL';
+    let trendColor = '#ffffff'; // White for neutral
+    
+    // Find the highest weighted trend
+    if (trendAnalysis.uptrend > trendAnalysis.downtrend && trendAnalysis.uptrend > trendAnalysis.neutral) {
+        dominantTrend = 'UPTREND';
+        trendColor = '#16c784'; // Green for uptrend
+    } else if (trendAnalysis.downtrend > trendAnalysis.uptrend && trendAnalysis.downtrend > trendAnalysis.neutral) {
+        dominantTrend = 'DOWNTREND';
+        trendColor = '#ff4b4b'; // Red for downtrend
+    } else {
+        dominantTrend = 'NEUTRAL';
+        trendColor = '#ffffff'; // White for neutral
+    }
+    
+    // Update combined TA display with trend information
     const combinedEl = document.getElementById('converter-ta-combined');
     if (combinedEl) {
         const combinedValueEl = combinedEl.querySelector('.combined-ta-value');
         if (combinedValueEl) {
-            combinedValueEl.textContent = combinedTA;
-            combinedValueEl.style.color = combinedTA === 'BUY' ? '#16c784' : (combinedTA === 'SELL' || combinedTA === 'LOCK PROFIT') ? '#ff4b4b' : '#ffffff';
+            // Display both combined TA and trend
+            combinedValueEl.innerHTML = `
+                <div style="font-size: 1.2em; font-weight: bold; margin-bottom: 5px;">${combinedTA}</div>
+                <div style="font-size: 0.6em; color: ${trendColor}; font-weight: bold;">${dominantTrend}</div>
+            `;
+            
+            // Color coding for combined TA
+            if (combinedTA === 'BUY') {
+                combinedValueEl.style.color = '#16c784'; // Green
+            } else if (combinedTA === 'SELL') {
+                combinedValueEl.style.color = '#ff4b4b'; // Red
+            } else {
+                combinedValueEl.style.color = '#ffffff'; // White
+            }
         }
     }
 }
