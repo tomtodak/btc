@@ -769,7 +769,13 @@ class MultiTimeframeBTCCalculator {
     
     updateMainSuggestion() {
         const timeframes = ['daily', 'weekly', 'monthly', 'yearly'];
-        const weights = { monthly: 0.45, yearly: 0.18, daily: 0.30, weekly: 0.07 }; // Weighted voting
+        // === UPDATED: New weight distribution ===
+        const weights = { 
+            monthly: 0.45,  // 45% - paling tinggi
+            daily: 0.20,    // 20% - kedua
+            yearly: 0.10,   // 10% - ketiga
+            weekly: 0.05    // 5% - paling rendah
+        }; // Total: 80% untuk timeframe signals
         
         let totalScore = 0;
         let totalWeight = 0;
@@ -792,7 +798,7 @@ class MultiTimeframeBTCCalculator {
                 srSuggestion = 'HOLD';
             }
             
-            // VT suggestion (ikut converter logic)
+            // VT suggestion
             if (Math.abs(current - data.high) < Math.abs(current - data.low)) {
                 if (Math.abs(current - data.high) < 1) {
                     vtSuggestion = 'HOLD';
@@ -809,7 +815,7 @@ class MultiTimeframeBTCCalculator {
                 }
             }
             
-            // HV suggestion (ikut converter logic)
+            // HV suggestion
             let highVolumeBuy = data.volumeData?.[data.high]?.buy || 0;
             let highVolumeSell = data.volumeData?.[data.low]?.sell || 0;
             if (highVolumeBuy > highVolumeSell) {
@@ -820,8 +826,7 @@ class MultiTimeframeBTCCalculator {
                 hvSuggestion = 'HOLD';
             }
             
-            // === NEW: Simplified Trend Analysis Logic ===
-            // Calculate percentage difference from Most Bought and Most Sold
+            // === UPDATED: Trend Analysis Logic dengan weight 20% ===
             const mostBoughtPrice = data.high;
             const mostSoldPrice = data.low;
             
@@ -832,21 +837,21 @@ class MultiTimeframeBTCCalculator {
                 // Logic: If current price is within 5% above Most Bought → UPTREND
                 if (currentToBoughtPercent >= -5 && currentToBoughtPercent <= 5) {
                     trendSuggestion = 'BUY'; // Uptrend signal
-                    trendAnalysis.uptrend += weights[tf]; // Add weighted score for uptrend
+                    trendAnalysis.uptrend += 0.20; // 20% weight untuk trend
                 }
                 // Logic: If current price is below 5% from Most Sold → DOWNTREND
                 else if (currentToSoldPercent <= -5) {
                     trendSuggestion = 'SELL'; // Downtrend signal
-                    trendAnalysis.downtrend += weights[tf]; // Add weighted score for downtrend
+                    trendAnalysis.downtrend += 0.20; // 20% weight untuk trend
                 }
                 // Logic: If not uptrend or downtrend → NEUTRAL
                 else {
                     trendSuggestion = 'HOLD'; // Neutral signal
-                    trendAnalysis.neutral += weights[tf]; // Add weighted score for neutral
+                    trendAnalysis.neutral += 0.20; // 20% weight untuk trend
                 }
-        } else {
+            } else {
                 trendSuggestion = 'HOLD';
-                trendAnalysis.neutral += weights[tf];
+                trendAnalysis.neutral += 0.20; // 20% weight untuk trend
             }
             
             // Combine TA logic (majority) - now includes trend analysis
@@ -856,40 +861,40 @@ class MultiTimeframeBTCCalculator {
             if (buyCount >= 2) taSuggestion = 'BUY';
             else if (sellCount >= 2) taSuggestion = 'SELL';
             else taSuggestion = 'HOLD';
-
-            // Calculate weighted score
-        let score = 0;
-        if (taSuggestion === 'BUY') score = 1;
-        else if (taSuggestion === 'SELL' || taSuggestion === 'LOCK PROFIT') score = -1;
-        else score = 0;
-        
-        totalScore += score * weights[tf];
-        totalWeight += weights[tf];
+            
+            // Calculate weighted score untuk timeframe signals (80% total)
+            let score = 0;
+            if (taSuggestion === 'BUY') score = 1;
+            else if (taSuggestion === 'SELL' || taSuggestion === 'LOCK PROFIT') score = -1;
+            else score = 0;
+            
+            totalScore += score * weights[tf]; // 80% dari timeframe signals
+            totalWeight += weights[tf]; // 80% total weight
         });
         
-        // Calculate main suggestion based on weighted average
+        // === UPDATED: Calculate main suggestion dengan 80% timeframe + 20% trend ===
         let mainSuggestion = 'HOLD';
-    if (totalWeight > 0) {
-        const averageScore = totalScore / totalWeight;
-        if (averageScore >= 0.3) {
+        if (totalWeight > 0) {
+            const averageScore = totalScore / totalWeight; // 80% timeframe signals
+            if (averageScore >= 0.3) {
                 mainSuggestion = 'BUY';
-        } else if (averageScore <= -0.3) {
+            } else if (averageScore <= -0.3) {
                 mainSuggestion = 'SELL';
             }
         }
         
-        // === NEW: Determine dominant trend for display ===
+        // === UPDATED: Determine dominant trend (20% weight) ===
         let dominantTrend = 'NEUTRAL';
         let trendColor = '#ffffff'; // White for neutral
         
-        // Find the highest weighted trend
+        // Find the highest weighted trend (20% weight)
         if (trendAnalysis.uptrend > trendAnalysis.downtrend && trendAnalysis.uptrend > trendAnalysis.neutral) {
             dominantTrend = 'UPTREND';
             trendColor = '#16c784'; // Green for uptrend
         } else if (trendAnalysis.downtrend > trendAnalysis.uptrend && trendAnalysis.downtrend > trendAnalysis.neutral) {
             dominantTrend = 'DOWNTREND';
             trendColor = '#ff4b4b'; // Red for downtrend
-            } else {
+        } else {
             dominantTrend = 'NEUTRAL';
             trendColor = '#ffffff'; // White for neutral
         }
@@ -1725,7 +1730,13 @@ if (btcInput) {
 function updateConverterTASuggestion() {
     const timeframes = ['daily', 'weekly', 'monthly', 'yearly'];
     const labels = { daily: 'Daily', weekly: 'Weekly', monthly: 'Monthly', yearly: 'Yearly' };
-    const weights = { monthly: 0.45, yearly: 0.18, daily: 0.30, weekly: 0.07 }; // Weighted voting
+    // === UPDATED: New weight distribution sama seperti summary ===
+    const weights = { 
+        monthly: 0.45,  // 45% - paling tinggi
+        daily: 0.20,    // 20% - kedua
+        yearly: 0.10,   // 10% - ketiga
+        weekly: 0.05    // 5% - paling rendah
+    }; // Total: 80% untuk timeframe signals
     
     let totalScore = 0;
     let totalWeight = 0;
@@ -1749,7 +1760,7 @@ function updateConverterTASuggestion() {
             srSuggestion = 'HOLD';
         }
         
-        // VT suggestion (ikut summary logic)
+        // VT suggestion
         if (Math.abs(current - data.high) < Math.abs(current - data.low)) {
             if (Math.abs(current - data.high) < 1) {
                 vtSuggestion = 'HOLD';
@@ -1766,7 +1777,7 @@ function updateConverterTASuggestion() {
             }
         }
         
-        // HV suggestion (ikut summary logic)
+        // HV suggestion
         let highVolumeBuy = data.volumeData?.[data.high]?.buy || 0;
         let highVolumeSell = data.volumeData?.[data.low]?.sell || 0;
         if (highVolumeBuy > highVolumeSell) {
@@ -1814,8 +1825,7 @@ function updateConverterTASuggestion() {
             taSuggestion = 'HOLD';
         }
         
-        // === NEW: Trend Analysis Logic for Main Suggestion ===
-        // Calculate percentage difference from Most Bought and Most Sold
+        // === UPDATED: Trend Analysis Logic dengan weight 20% ===
         const mostBoughtPrice = data.high;
         const mostSoldPrice = data.low;
         
@@ -1826,31 +1836,31 @@ function updateConverterTASuggestion() {
             // Logic: If current price is within 5% above Most Bought → UPTREND
             if (currentToBoughtPercent >= -5 && currentToBoughtPercent <= 5) {
                 trendSuggestion = 'BUY'; // Uptrend signal
-                trendAnalysis.uptrend += weights[tf]; // Add weighted score for uptrend
+                trendAnalysis.uptrend += 0.20; // 20% weight untuk trend
             }
             // Logic: If current price is below 5% from Most Sold → DOWNTREND
             else if (currentToSoldPercent <= -5) {
                 trendSuggestion = 'SELL'; // Downtrend signal
-                trendAnalysis.downtrend += weights[tf]; // Add weighted score for downtrend
+                trendAnalysis.downtrend += 0.20; // 20% weight untuk trend
             }
             // Logic: If not uptrend or downtrend → NEUTRAL
             else {
                 trendSuggestion = 'HOLD'; // Neutral signal
-                trendAnalysis.neutral += weights[tf]; // Add weighted score for neutral
+                trendAnalysis.neutral += 0.20; // 20% weight untuk trend
             }
         } else {
             trendSuggestion = 'HOLD';
-            trendAnalysis.neutral += weights[tf];
+            trendAnalysis.neutral += 0.20; // 20% weight untuk trend
         }
         
-        // Calculate weighted score for combined TA (for main suggestion)
+        // Calculate weighted score untuk timeframe signals (80% total)
         let score = 0;
         if (taSuggestion === 'BUY') score = 1;
         else if (taSuggestion === 'SELL' || taSuggestion === 'LOCK PROFIT') score = -1;
         else score = 0;
         
-        totalScore += score * weights[tf];
-        totalWeight += weights[tf];
+        totalScore += score * weights[tf]; // 80% dari timeframe signals
+        totalWeight += weights[tf]; // 80% total weight
         
         let className = '';
         if (taSuggestion === 'BUY') className = 'converter-ta-buy';
@@ -1860,12 +1870,12 @@ function updateConverterTASuggestion() {
         el.innerHTML = `<div class='converter-ta-suggestion-row'><div class='converter-ta-label'>${labels[tf]}</div><div class='converter-ta-value ${className}'>${taSuggestion}</div></div>`;
     });
     
-    // Calculate combined TA suggestion (Main Suggestion) - using majority voting with 4 signals
+    // === UPDATED: Calculate combined TA suggestion dengan 80% timeframe + 20% trend ===
     let combinedTA = 'HOLD';
     let combinedClassName = 'converter-ta-hold';
     
     if (totalWeight > 0) {
-        const averageScore = totalScore / totalWeight;
+        const averageScore = totalScore / totalWeight; // 80% timeframe signals
         if (averageScore >= 0.3) {
             combinedTA = 'BUY';
             combinedClassName = 'converter-ta-buy';
@@ -1875,11 +1885,11 @@ function updateConverterTASuggestion() {
         }
     }
     
-    // === NEW: Determine dominant trend for converter display ===
+    // === UPDATED: Determine dominant trend (20% weight) ===
     let dominantTrend = 'NEUTRAL';
     let trendColor = '#ffffff'; // White for neutral
     
-    // Find the highest weighted trend
+    // Find the highest weighted trend (20% weight)
     if (trendAnalysis.uptrend > trendAnalysis.downtrend && trendAnalysis.uptrend > trendAnalysis.neutral) {
         dominantTrend = 'UPTREND';
         trendColor = '#16c784'; // Green for uptrend
