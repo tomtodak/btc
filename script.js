@@ -585,9 +585,8 @@ class MultiTimeframeBTCCalculator {
         timeframes.forEach(tf => {
             const data = this.timeframes[tf];
             const levels = data.levels;
-            let srSuggestion = '-', vtSuggestion = '-', taSuggestion = '-';
+            let srSuggestion = '-', vtSuggestion = '-', hvSuggestion = '-', taSuggestion = '-';
             let taTarget = '';
-            let hvSuggestion = '-';
             let info = '';
             if (levels && data.high && data.low && data.close) {
                 const current = this.currentPrice;
@@ -629,6 +628,7 @@ class MultiTimeframeBTCCalculator {
                     hvSuggestion = 'HOLD';
                 }
 
+                // === UPDATED: Weighted average with 3 signals only ===
                 // Weighted TA logic (SR: 45%, HV: 35%, VT: 20%)
                 const weights = { SR: 0.45, HV: 0.35, VT: 0.20 };
                 let totalScore = 0;
@@ -665,25 +665,25 @@ class MultiTimeframeBTCCalculator {
                     taSuggestion = 'HOLD';
                 }
 
-                // Next target/support untuk TA (guna formatPrice)
-                // Logic dinamik: cari resistance/support terdekat dari current price
-                const resistanceLevels = ['r1', 'r2', 'r3', 'r4'];
-                const supportLevels = ['s1', 's2', 's3', 's4'];
-                let nextTargetLevel = null, nextSupportLevel = null;
-                for (let i = 0; i < resistanceLevels.length; i++) {
-                    const lvl = levels[resistanceLevels[i]];
-                    if (lvl > current) {
-                        nextTargetLevel = lvl;
-                        break;
-                    }
+            // Next target/support untuk TA (guna formatPrice)
+            // Logic dinamik: cari resistance/support terdekat dari current price
+            const resistanceLevels = ['r1', 'r2', 'r3', 'r4'];
+            const supportLevels = ['s1', 's2', 's3', 's4'];
+            let nextTargetLevel = null, nextSupportLevel = null;
+            for (let i = 0; i < resistanceLevels.length; i++) {
+                const lvl = levels[resistanceLevels[i]];
+                if (lvl > current) {
+                    nextTargetLevel = lvl;
+                    break;
                 }
-                for (let i = 0; i < supportLevels.length; i++) {
-                    const lvl = levels[supportLevels[i]];
-                    if (lvl < current) {
-                        nextSupportLevel = lvl;
-                        break;
-                    }
+            }
+            for (let i = 0; i < supportLevels.length; i++) {
+                const lvl = levels[supportLevels[i]];
+                if (lvl < current) {
+                    nextSupportLevel = lvl;
+                    break;
                 }
+            }
                 // Jika tiada support di bawah, cari support seterusnya (S2, S3, S4)
                 if (nextSupportLevel === null) {
                     for (let i = 0; i < supportLevels.length; i++) {
@@ -694,63 +694,70 @@ class MultiTimeframeBTCCalculator {
                         }
                     }
                 }
-                if (taSuggestion === 'HOLD' || taSuggestion === 'CAUTION') {
-                    taTarget = `
-                        <div class='next-target' style='margin-bottom:0;'>Next Target: <b>${window.formatPrice ? window.formatPrice(nextTargetLevel) : (nextTargetLevel ?? '-')}</b></div>
-                        <div class='next-target last-next-target'>Next Support: <b>${window.formatPrice ? window.formatPrice(nextSupportLevel) : (nextSupportLevel ?? '-')}</b></div>
-                    `;
-                } else if (taSuggestion.includes('BUY')) {
-                    taTarget = `<div class='next-target last-next-target'>Next Target: <b>${window.formatPrice ? window.formatPrice(nextTargetLevel) : (nextTargetLevel ?? '-')}</b></div>`;
-                } else if (taSuggestion.includes('SELL') || taSuggestion === 'LOCK PROFIT') {
-                    taTarget = `<div class='next-target last-next-target'>Next Support: <b>${window.formatPrice ? window.formatPrice(nextSupportLevel) : (nextSupportLevel ?? '-')}</b></div>`;
-                }
-
-                // Determine which has more volume
-                const buyVol = data.volumeData?.[data.high]?.buy || 0;
-                const sellVol = data.volumeData?.[data.low]?.sell || 0;
-                const highlightBought = buyVol >= sellVol;
-                const highlightSold = sellVol > buyVol;
-                const mostBoughtStyle = highlightBought ? 'color:#16c784;font-weight:bold;' : '';
-                const mostSoldStyle = highlightSold ? 'color:#ff4b4b;font-weight:bold;' : '';
-                // Add color styling for SR, VT, HV suggestions
-                const getSuggestionColor = (suggestion) => {
-                    if (suggestion === 'BUY') return 'color:#16c784;font-weight:bold;';
-                    if (suggestion === 'SELL' || suggestion === 'LOCK PROFIT') return 'color:#ff4b4b;font-weight:bold;';
-                    return 'color:#ffffff;font-weight:bold;';
-                };
-                
-                const srColor = getSuggestionColor(srSuggestion);
-                const vtColor = getSuggestionColor(vtSuggestion);
-                const hvColor = getSuggestionColor(hvSuggestion);
-                
-                info = `
-                    ${taTarget}
-                    <div><b>SR</b>: <span style="${srColor}">${srSuggestion}</span></div>
-                    <div><b>VT</b>: <span style="${vtColor}">${vtSuggestion}</span></div>
-                    <div><b>HV</b>: <span style="${hvColor}">${hvSuggestion}</span></div>
-                    <div style="margin-top:8px;">Current Price: <b>${window.formatPrice ? window.formatPrice(current) : current}</b></div>
-                    <div style='${mostBoughtStyle}'>Most Bought: <b>${window.formatPrice ? window.formatPrice(data.high) : data.high}</b></div>
-                    <div style='${mostSoldStyle}'>Most Sold: <b>${window.formatPrice ? window.formatPrice(data.low) : data.low}</b></div>
+            if (taSuggestion === 'HOLD' || taSuggestion === 'CAUTION') {
+                taTarget = `
+                    <div class='next-target' style='margin-bottom:0;'>Next Target: <b>${window.formatPrice ? window.formatPrice(nextTargetLevel) : (nextTargetLevel ?? '-')}</b></div>
+                    <div class='next-target last-next-target'>Next Support: <b>${window.formatPrice ? window.formatPrice(nextSupportLevel) : (nextSupportLevel ?? '-')}</b></div>
                 `;
+            } else if (taSuggestion.includes('BUY')) {
+                taTarget = `<div class='next-target last-next-target'>Next Target: <b>${window.formatPrice ? window.formatPrice(nextTargetLevel) : (nextTargetLevel ?? '-')}</b></div>`;
+            } else if (taSuggestion.includes('SELL') || taSuggestion === 'LOCK PROFIT') {
+                taTarget = `<div class='next-target last-next-target'>Next Support: <b>${window.formatPrice ? window.formatPrice(nextSupportLevel) : (nextSupportLevel ?? '-')}</b></div>`;
             }
+
+            // Determine which has more volume
+            const buyVol = data.volumeData?.[data.high]?.buy || 0;
+            const sellVol = data.volumeData?.[data.low]?.sell || 0;
+            const highlightBought = buyVol >= sellVol;
+            const highlightSold = sellVol > buyVol;
+            const mostBoughtStyle = highlightBought ? 'color:#16c784;font-weight:bold;' : '';
+            const mostSoldStyle = highlightSold ? 'color:#ff4b4b;font-weight:bold;' : '';
+            // Add color styling for SR, VT, HV suggestions
+            const getSuggestionColor = (suggestion) => {
+                if (suggestion === 'BUY') return 'color:#16c784;font-weight:bold;';
+                if (suggestion === 'SELL' || suggestion === 'LOCK PROFIT') return 'color:#ff4b4b;font-weight:bold;';
+                return 'color:#ffffff;font-weight:bold;';
+            };
+            
+            const srColor = getSuggestionColor(srSuggestion);
+            const vtColor = getSuggestionColor(vtSuggestion);
+            const hvColor = getSuggestionColor(hvSuggestion);
+            
+            info = `
+                ${taTarget}
+                <div><b>SR</b>: <span style="${srColor}">${srSuggestion}</span></div>
+                <div><b>VT</b>: <span style="${vtColor}">${vtSuggestion}</span></div>
+                <div><b>HV</b>: <span style="${hvColor}">${hvSuggestion}</span></div>
+                <div style="margin-top:8px;">Current Price: <b>${window.formatPrice ? window.formatPrice(current) : current}</b></div>
+                <div style='${mostBoughtStyle}'>Most Bought: <b>${window.formatPrice ? window.formatPrice(data.high) : data.high}</b></div>
+                <div style='${mostSoldStyle}'>Most Sold: <b>${window.formatPrice ? window.formatPrice(data.low) : data.low}</b></div>
+            `;
+            }
+            
+            // === ADDED BACK: Display individual timeframe suggestions ===
             // Papar TA dengan color coding
             const taElement = document.getElementById(`summary-${tf}-suggestion`);
-            taElement.textContent = taSuggestion;
-            
-            // Add color coding based on TA suggestion
-            if (taSuggestion === 'BUY') {
-                taElement.style.color = '#16c784'; // Green
-                taElement.style.fontWeight = 'bold';
-            } else if (taSuggestion === 'SELL' || taSuggestion === 'LOCK PROFIT') {
-                taElement.style.color = '#ff4b4b'; // Red
-                taElement.style.fontWeight = 'bold';
-            } else {
-                taElement.style.color = '#ffffff'; // White (default)
-                taElement.style.fontWeight = 'normal';
+            if (taElement) {
+                taElement.textContent = taSuggestion;
+                
+                // Add color coding based on TA suggestion
+                if (taSuggestion === 'BUY') {
+                    taElement.style.color = '#16c784'; // Green
+                    taElement.style.fontWeight = 'bold';
+                } else if (taSuggestion === 'SELL' || taSuggestion === 'LOCK PROFIT') {
+                    taElement.style.color = '#ff4b4b'; // Red
+                    taElement.style.fontWeight = 'bold';
+                } else {
+                    taElement.style.color = '#ffffff'; // White (default)
+                    taElement.style.fontWeight = 'normal';
+                }
             }
             
             // Papar next target/support TA di bawah, kemudian SR & VT & HV, kemudian info harga
-            document.getElementById(`summary-${tf}-info`).innerHTML = info;
+            const infoElement = document.getElementById(`summary-${tf}-info`);
+            if (infoElement) {
+                infoElement.innerHTML = info;
+            }
         });
         
         // Add Main Suggestion Analysis
@@ -1363,6 +1370,16 @@ function updateSummaryTabCurrency() {
                     break;
                 }
             }
+            // Jika tiada support di bawah, cari support seterusnya (S2, S3, S4)
+            if (nextSupportLevel === null) {
+                for (let i = 0; i < supportLevels.length; i++) {
+                    const lvl = levels[supportLevels[i]];
+                    if (lvl > 0) {
+                        nextSupportLevel = lvl;
+                        break;
+                    }
+                }
+            }
             if (taSuggestion === 'HOLD' || taSuggestion === 'CAUTION') {
                 taTarget = `
                     <div class='next-target' style='margin-bottom:0;'>Next Target: <b>${window.formatPrice ? window.formatPrice(nextTargetLevel) : (nextTargetLevel ?? '-')}</b></div>
@@ -1402,10 +1419,31 @@ function updateSummaryTabCurrency() {
                 <div style='${mostSoldStyle}'>Most Sold: <b>${window.formatPrice ? window.formatPrice(data.low) : data.low}</b></div>
             `;
         }
-        // Papar TA sahaja di bold putih
-        document.getElementById(`summary-${tf}-suggestion`).textContent = taSuggestion;
+        
+        // === ADDED BACK: Display individual timeframe suggestions ===
+        // Papar TA dengan color coding
+        const taElement = document.getElementById(`summary-${tf}-suggestion`);
+        if (taElement) {
+            taElement.textContent = taSuggestion;
+            
+            // Add color coding based on TA suggestion
+            if (taSuggestion === 'BUY') {
+                taElement.style.color = '#16c784'; // Green
+                taElement.style.fontWeight = 'bold';
+            } else if (taSuggestion === 'SELL' || taSuggestion === 'LOCK PROFIT') {
+                taElement.style.color = '#ff4b4b'; // Red
+                taElement.style.fontWeight = 'bold';
+            } else {
+                taElement.style.color = '#ffffff'; // White (default)
+                taElement.style.fontWeight = 'normal';
+            }
+        }
+        
         // Papar next target/support TA di bawah, kemudian SR & VT & HV, kemudian info harga
-        document.getElementById(`summary-${tf}-info`).innerHTML = info;
+        const infoElement = document.getElementById(`summary-${tf}-info`);
+        if (infoElement) {
+            infoElement.innerHTML = info;
+        }
     });
 }
 
@@ -1739,7 +1777,44 @@ function updateConverterTASuggestion() {
             hvSuggestion = 'HOLD';
         }
         
-        // === NEW: Trend Analysis Logic for Converter ===
+        // === UPDATED: Weighted average with 3 signals only for individual timeframes ===
+        // Weighted TA logic (SR: 45%, HV: 35%, VT: 20%)
+        const signalWeights = { SR: 0.45, HV: 0.35, VT: 0.20 };
+        let totalSignalScore = 0;
+        let totalSignalWeight = 0;
+        
+        // Calculate weighted score for each signal
+        const signals = [
+            { type: 'SR', suggestion: srSuggestion, weight: signalWeights.SR },
+            { type: 'HV', suggestion: hvSuggestion, weight: signalWeights.HV },
+            { type: 'VT', suggestion: vtSuggestion, weight: signalWeights.VT }
+        ];
+        
+        signals.forEach(signal => {
+            let score = 0;
+            if (signal.suggestion === 'BUY') score = 1;
+            else if (signal.suggestion === 'SELL' || signal.suggestion === 'LOCK PROFIT') score = -1;
+            else score = 0;
+            
+            totalSignalScore += score * signal.weight;
+            totalSignalWeight += signal.weight;
+        });
+        
+        // Determine final TA suggestion for individual timeframe
+        if (totalSignalWeight > 0) {
+            const averageScore = totalSignalScore / totalSignalWeight;
+            if (averageScore >= 0.3) {
+                taSuggestion = 'BUY';
+            } else if (averageScore <= -0.3) {
+                taSuggestion = 'SELL';
+            } else {
+                taSuggestion = 'HOLD';
+            }
+        } else {
+            taSuggestion = 'HOLD';
+        }
+        
+        // === NEW: Trend Analysis Logic for Main Suggestion ===
         // Calculate percentage difference from Most Bought and Most Sold
         const mostBoughtPrice = data.high;
         const mostSoldPrice = data.low;
@@ -1768,15 +1843,7 @@ function updateConverterTASuggestion() {
             trendAnalysis.neutral += weights[tf];
         }
         
-        // Combine TA logic (majority) - now includes trend analysis
-        const signals = [srSuggestion, vtSuggestion, hvSuggestion, trendSuggestion];
-        const buyCount = signals.filter(s => s.includes('BUY')).length;
-        const sellCount = signals.filter(s => s.includes('SELL')).length;
-        if (buyCount >= 2) taSuggestion = 'BUY';
-        else if (sellCount >= 2) taSuggestion = 'SELL';
-        else taSuggestion = 'HOLD';
-        
-        // Calculate weighted score for combined TA
+        // Calculate weighted score for combined TA (for main suggestion)
         let score = 0;
         if (taSuggestion === 'BUY') score = 1;
         else if (taSuggestion === 'SELL' || taSuggestion === 'LOCK PROFIT') score = -1;
@@ -1793,7 +1860,7 @@ function updateConverterTASuggestion() {
         el.innerHTML = `<div class='converter-ta-suggestion-row'><div class='converter-ta-label'>${labels[tf]}</div><div class='converter-ta-value ${className}'>${taSuggestion}</div></div>`;
     });
     
-    // Calculate combined TA suggestion
+    // Calculate combined TA suggestion (Main Suggestion) - using majority voting with 4 signals
     let combinedTA = 'HOLD';
     let combinedClassName = 'converter-ta-hold';
     
