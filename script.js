@@ -1008,9 +1008,9 @@ class MultiTimeframeBTCCalculator {
             const distanceToS1 = Math.abs(current - levels.s1);
             
             if (distanceToR1 < distanceToS1) {
-                bullishSignals += 0.5; // Closer to resistance = potential breakout
+                bullishSignals += 0.5;
             } else {
-                bearishSignals += 0.5; // Closer to support = potential breakdown
+                bearishSignals += 0.5;
             }
         });
         
@@ -1022,7 +1022,7 @@ class MultiTimeframeBTCCalculator {
         let predictedHigh = current;
         let predictedLow = current;
         let confidence = 'MEDIUM';
-        let highlightedTarget = 'NONE'; // NEW: Which target to highlight
+        let highlightedTarget = 'NONE';
         
         if (monthlyData && monthlyData.levels) {
             const monthlyLevels = monthlyData.levels;
@@ -1033,17 +1033,17 @@ class MultiTimeframeBTCCalculator {
             const currentToPivot = ((current - monthlyLevels.pivot) / monthlyLevels.pivot) * 100;
             
             if (trendStrength > 0.3) {
-                // Bullish prediction
-                predictedHigh = monthlyLevels.r2 || current * 1.15;
+                // Bullish prediction - Kekalkan R2 (lebih realistic)
+                predictedHigh = monthlyLevels.r2 || current * 1.15;  // ← Kekalkan R2
                 predictedLow = monthlyLevels.s1 || current * 0.95;
                 confidence = 'HIGH';
-                highlightedTarget = 'HIGH'; // Highlight predicted high for bullish
+                highlightedTarget = 'HIGH';
             } else if (trendStrength < -0.3) {
                 // Bearish prediction
                 predictedHigh = monthlyLevels.r1 || current * 1.05;
                 predictedLow = monthlyLevels.s2 || current * 0.85;
                 confidence = 'HIGH';
-                highlightedTarget = 'LOW'; // Highlight predicted low for bearish
+                highlightedTarget = 'LOW';
             } else {
                 // Neutral prediction
                 predictedHigh = monthlyLevels.r1 || current * 1.10;
@@ -1052,13 +1052,13 @@ class MultiTimeframeBTCCalculator {
                 
                 // For neutral, determine highlight based on position
                 if (Math.abs(currentToPivot) < 2) {
-                    highlightedTarget = 'NONE'; // No highlight for consolidation
+                    highlightedTarget = 'NONE';
                 } else if (currentToR1 > -5 && currentToR1 < 5) {
-                    highlightedTarget = 'LOW'; // Highlight low (expect rejection)
+                    highlightedTarget = 'LOW';
                 } else if (currentToS1 > -5 && currentToS1 < 5) {
-                    highlightedTarget = 'HIGH'; // Highlight high (expect bounce)
+                    highlightedTarget = 'HIGH';
                 } else {
-                    highlightedTarget = 'NONE'; // No highlight for sideways
+                    highlightedTarget = 'NONE';
                 }
             }
         }
@@ -1070,7 +1070,7 @@ class MultiTimeframeBTCCalculator {
             predictedLow: predictedLow,
             trendStrength: trendStrength,
             confidence: confidence,
-            highlightedTarget: highlightedTarget, // NEW: Which target to highlight
+            highlightedTarget: highlightedTarget,
             timeframe: '3 Months',
             bullishSignals: bullishSignals,
             bearishSignals: bearishSignals,
