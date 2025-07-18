@@ -299,6 +299,9 @@ class MultiTimeframeBTCCalculator {
         
         // Update summary tab
         this.updateSummaryTab();
+        
+        // Update prediction display
+        this.updatePredictionDisplay();
     }
     
     updateTimeframeDisplay(timeframe) {
@@ -975,6 +978,541 @@ class MultiTimeframeBTCCalculator {
         // Update zodiac info
         document.getElementById('summary-zodiac-info').innerHTML = zodiacInfo;
     }
+
+    // Tambah fungsi prediksi 3 bulan
+    predictNext3Months() {
+        const timeframes = ['daily', 'weekly', 'monthly', 'yearly'];
+        const current = this.currentPrice;
+        
+        // 1. Analisis trend dari semua timeframe
+        let bullishSignals = 0;
+        let bearishSignals = 0;
+        let totalSignals = 0;
+        
+        timeframes.forEach(tf => {
+            const data = this.timeframes[tf];
+            if (!data || !data.levels) return;
+            
+            const levels = data.levels;
+            
+            // Check position relative to pivot
+            if (current > levels.pivot) {
+                bullishSignals++;
+            } else if (current < levels.pivot) {
+                bearishSignals++;
+            }
+            totalSignals++;
+            
+            // Check momentum (distance from support/resistance)
+            const distanceToR1 = Math.abs(current - levels.r1);
+            const distanceToS1 = Math.abs(current - levels.s1);
+            
+            if (distanceToR1 < distanceToS1) {
+                bullishSignals += 0.5; // Closer to resistance = potential breakout
+            } else {
+                bearishSignals += 0.5; // Closer to support = potential breakdown
+            }
+        });
+        
+        // 2. Calculate trend strength
+        const trendStrength = (bullishSignals - bearishSignals) / totalSignals;
+        
+        // 3. Predict price ranges for next 3 months
+        const monthlyData = this.timeframes.monthly;
+        let predictedHigh = current;
+        let predictedLow = current;
+        let confidence = 'MEDIUM';
+        let highlightedTarget = 'NONE'; // NEW: Which target to highlight
+        
+        if (monthlyData && monthlyData.levels) {
+            const monthlyLevels = monthlyData.levels;
+            
+            // Calculate current position relative to levels
+            const currentToR1 = ((current - monthlyLevels.r1) / monthlyLevels.r1) * 100;
+            const currentToS1 = ((current - monthlyLevels.s1) / monthlyLevels.s1) * 100;
+            const currentToPivot = ((current - monthlyLevels.pivot) / monthlyLevels.pivot) * 100;
+            
+            if (trendStrength > 0.3) {
+                // Bullish prediction
+                predictedHigh = monthlyLevels.r2 || current * 1.15;
+                predictedLow = monthlyLevels.s1 || current * 0.95;
+                confidence = 'HIGH';
+                highlightedTarget = 'HIGH'; // Highlight predicted high for bullish
+            } else if (trendStrength < -0.3) {
+                // Bearish prediction
+                predictedHigh = monthlyLevels.r1 || current * 1.05;
+                predictedLow = monthlyLevels.s2 || current * 0.85;
+                confidence = 'HIGH';
+                highlightedTarget = 'LOW'; // Highlight predicted low for bearish
+            } else {
+                // Neutral prediction
+                predictedHigh = monthlyLevels.r1 || current * 1.10;
+                predictedLow = monthlyLevels.s1 || current * 0.90;
+                confidence = 'MEDIUM';
+                
+                // For neutral, determine highlight based on position
+                if (Math.abs(currentToPivot) < 2) {
+                    highlightedTarget = 'NONE'; // No highlight for consolidation
+                } else if (currentToR1 > -5 && currentToR1 < 5) {
+                    highlightedTarget = 'LOW'; // Highlight low (expect rejection)
+                } else if (currentToS1 > -5 && currentToS1 < 5) {
+                    highlightedTarget = 'HIGH'; // Highlight high (expect bounce)
+                } else {
+                    highlightedTarget = 'NONE'; // No highlight for sideways
+                }
+            }
+        }
+        
+        // 4. Calculate probability ranges
+        const prediction = {
+            currentPrice: current,
+            predictedHigh: predictedHigh,
+            predictedLow: predictedLow,
+            trendStrength: trendStrength,
+            confidence: confidence,
+            highlightedTarget: highlightedTarget, // NEW: Which target to highlight
+            timeframe: '3 Months',
+            bullishSignals: bullishSignals,
+            bearishSignals: bearishSignals,
+            totalSignals: totalSignals,
+            analysis: this.generatePredictionAnalysis(trendStrength, predictedHigh, predictedLow)
+        };
+        
+        return prediction;
+    }
+
+    generatePredictionAnalysis(trendStrength, predictedHigh, predictedLow) {
+        let analysis = '';
+        
+        if (trendStrength > 0.5) {
+            analysis = `Strong bullish momentum detected. Price likely to test resistance levels with potential breakout above ${window.formatPrice ? window.formatPrice(predictedHigh) : `$${predictedHigh.toLocaleString()}`}.`;
+        } else if (trendStrength > 0.2) {
+            analysis = `Moderate bullish bias. Expect gradual upward movement with resistance at ${window.formatPrice ? window.formatPrice(predictedHigh) : `$${predictedHigh.toLocaleString()}`}.`;
+        } else if (trendStrength < -0.5) {
+            analysis = `Strong bearish pressure. Price may test support levels with potential breakdown below ${window.formatPrice ? window.formatPrice(predictedLow) : `$${predictedLow.toLocaleString()}`}.`;
+        } else if (trendStrength < -0.2) {
+            analysis = `Moderate bearish bias. Expect downward movement with support at ${window.formatPrice ? window.formatPrice(predictedLow) : `$${predictedLow.toLocaleString()}`}.`;
+        } else {
+            analysis = `Neutral market conditions. Price likely to consolidate between ${window.formatPrice ? window.formatPrice(predictedLow) : `$${predictedLow.toLocaleString()}`} and ${window.formatPrice ? window.formatPrice(predictedHigh) : `$${predictedHigh.toLocaleString()}`}.`;
+        }
+        
+        return analysis;
+    }
+
+    // Tambah fungsi untuk display prediksi
+    updatePredictionDisplay() {
+        const shortTermPrediction = this.predictNext3Months();
+        const longTermPrediction = this.predictNext4Years();
+        
+        // Only update prediction display if we're in the prediction tab
+        const predictionContent = document.getElementById('prediction-content');
+        if (!predictionContent || predictionContent.style.display === 'none') {
+            return;
+        }
+        
+        const predictionContainer = document.getElementById('prediction-container');
+        if (!predictionContainer) return;
+        
+        // Short-term styling
+        const shortTermConfidenceColor = shortTermPrediction.confidence === 'HIGH' ? '#16c784' : 
+                                       shortTermPrediction.confidence === 'MEDIUM' ? '#ffa500' : '#ff4b4b';
+        
+        const shortTermTrendColor = shortTermPrediction.trendStrength > 0.2 ? '#16c784' : 
+                                   shortTermPrediction.trendStrength < -0.2 ? '#ff4b4b' : '#ffffff';
+        
+        const shortTermHighStyle = shortTermPrediction.highlightedTarget === 'HIGH' ? 
+            'background: rgba(22, 199, 132, 0.2); border: 2px solid #16c784; box-shadow: 0 0 15px rgba(22, 199, 132, 0.3);' : 
+            'background: rgba(255,255,255,0.1);';
+        
+        const shortTermLowStyle = shortTermPrediction.highlightedTarget === 'LOW' ? 
+            'background: rgba(255, 75, 75, 0.2); border: 2px solid #ff4b4b; box-shadow: 0 0 15px rgba(255, 75, 75, 0.3);' : 
+            'background: rgba(255,255,255,0.1);';
+        
+        // Long-term styling
+        const longTermConfidenceColor = longTermPrediction.confidence === 'HIGH' ? '#16c784' : 
+                                       longTermPrediction.confidence === 'MEDIUM' ? '#ffa500' : '#ff4b4b';
+        
+        const longTermTrendColor = longTermPrediction.trendStrength > 0.2 ? '#16c784' : 
+                                  longTermPrediction.trendStrength < -0.2 ? '#ff4b4b' : '#ffffff';
+        
+        const longTermHighStyle = longTermPrediction.highlightedTarget === 'HIGH' ? 
+            'background: rgba(22, 199, 132, 0.3); border: 3px solid #16c784; box-shadow: 0 0 20px rgba(22, 199, 132, 0.4);' : 
+            'background: rgba(255,255,255,0.1);';
+        
+        const longTermLowStyle = longTermPrediction.highlightedTarget === 'LOW' ? 
+            'background: rgba(255, 75, 75, 0.3); border: 3px solid #ff4b4b; box-shadow: 0 0 20px rgba(255, 75, 75, 0.4);' : 
+            'background: rgba(255,255,255,0.1);';
+        
+        // Trajectory indicators
+        const shortTermIcon = shortTermPrediction.highlightedTarget === 'HIGH' ? '🚀' : 
+                             shortTermPrediction.highlightedTarget === 'LOW' ? '📉' : '➡️';
+        
+        const shortTermText = shortTermPrediction.highlightedTarget === 'HIGH' ? 'EXPECTING UPTREND' :
+                             shortTermPrediction.highlightedTarget === 'LOW' ? 'EXPECTING DOWNTREND' : 
+                              'EXPECTING SIDEWAYS';
+        
+        const longTermIcon = longTermPrediction.highlightedTarget === 'HIGH' ? '🚀' : 
+                            longTermPrediction.highlightedTarget === 'LOW' ? '📉' : '➡️';
+        
+        const longTermText = longTermPrediction.highlightedTarget === 'HIGH' ? 'LONG-TERM BULLISH' :
+                            longTermPrediction.highlightedTarget === 'LOW' ? 'LONG-TERM BEARISH' : 
+                            'LONG-TERM NEUTRAL';
+        
+        predictionContainer.innerHTML = `
+            <div class="prediction-header" style="text-align: center; margin-bottom: 30px;">
+                <h3 style="color: #fff; margin-bottom: 10px;">🎯 BTC Price Predictions</h3>
+                <div style="color: #ccc; font-size: 14px;">Short-term (3 Months) & Long-term Analysis</div>
+            </div>
+            
+            <!-- Short-term Prediction Section -->
+            <div class="prediction-section" style="margin-bottom: 40px;">
+                <div class="section-header" style="text-align: center; margin-bottom: 20px;">
+                    <h4 style="color: #fff; font-size: 18px; margin-bottom: 5px;"> 3-Month Prediction</h4>
+                    <div style="color: ${shortTermConfidenceColor}; font-weight: bold; font-size: 16px;">
+                        Confidence: ${shortTermPrediction.confidence}
+                    </div>
+                    <div style="margin-top: 5px; font-size: 14px; color: #ccc;">
+                        ${shortTermIcon} ${shortTermText}
+                </div>
+            </div>
+            
+                <div class="prediction-details" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px;">
+                    <div class="prediction-item" style="background: rgba(255,255,255,0.1); padding: 15px; border-radius: 8px; text-align: center;">
+                        <div style="font-size: 12px; color: #ccc; margin-bottom: 5px;">Current Price</div>
+                        <div style="font-size: 18px; font-weight: bold; color: #fff;">${window.formatPrice ? window.formatPrice(shortTermPrediction.currentPrice) : `$${shortTermPrediction.currentPrice.toLocaleString()}`}</div>
+                </div>
+                
+                    <div class="prediction-item" style="${shortTermHighStyle} padding: 15px; border-radius: 8px; text-align: center;">
+                        <div style="font-size: 12px; color: #ccc; margin-bottom: 5px;">
+                            ${shortTermPrediction.highlightedTarget === 'HIGH' ? '🎯 TARGET' : 'Predicted High'}
+                    </div>
+                        <div style="font-size: 18px; font-weight: bold; color: #16c784">${window.formatPrice ? window.formatPrice(shortTermPrediction.predictedHigh) : `$${shortTermPrediction.predictedHigh.toLocaleString()}`}</div>
+                </div>
+                
+                    <div class="prediction-item" style="${shortTermLowStyle} padding: 15px; border-radius: 8px; text-align: center;">
+                        <div style="font-size: 12px; color: #ccc; margin-bottom: 5px;">
+                            ${shortTermPrediction.highlightedTarget === 'LOW' ? '🎯 TARGET' : 'Predicted Low'}
+                    </div>
+                        <div style="font-size: 18px; font-weight: bold; color: #ff4b4b">${window.formatPrice ? window.formatPrice(shortTermPrediction.predictedLow) : `$${shortTermPrediction.predictedLow.toLocaleString()}`}</div>
+                </div>
+                
+                    <div class="prediction-item" style="background: rgba(255,255,255,0.1); padding: 15px; border-radius: 8px; text-align: center;">
+                        <div style="font-size: 12px; color: #ccc; margin-bottom: 5px;">Trend Strength</div>
+                        <div style="font-size: 18px; font-weight: bold; color: ${shortTermTrendColor}">${(shortTermPrediction.trendStrength * 100).toFixed(1)}%</div>
+                </div>
+            </div>
+            
+                <div class="prediction-analysis" style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                    <h5 style="color: #fff; margin-bottom: 10px; font-size: 14px;">📊 Short-term Analysis</h5>
+                    <p style="color: #ccc; line-height: 1.4; font-size: 13px;">${shortTermPrediction.analysis}</p>
+            </div>
+            
+                <div class="prediction-signals" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px;">
+                    <div class="signal-item" style="background: rgba(22, 199, 132, 0.1); padding: 15px; border-radius: 8px; text-align: center; border: 1px solid rgba(22, 199, 132, 0.3);">
+                        <div style="font-size: 11px; color: #ccc; margin-bottom: 5px;">Bullish Signals</div>
+                        <div style="font-size: 16px; font-weight: bold; color: #16c784">${shortTermPrediction.bullishSignals}</div>
+                </div>
+                    <div class="signal-item" style="background: rgba(255, 75, 75, 0.1); padding: 15px; border-radius: 8px; text-align: center; border: 1px solid rgba(255, 75, 75, 0.3);">
+                        <div style="font-size: 11px; color: #ccc; margin-bottom: 5px;">Bearish Signals</div>
+                        <div style="font-size: 16px; font-weight: bold; color: #ff4b4b">${shortTermPrediction.bearishSignals}</div>
+                </div>
+            </div>
+            </div>
+            
+            <!-- Long-term Prediction Section -->
+            <div class="prediction-section" style="margin-bottom: 40px;">
+                <div class="section-header" style="text-align: center; margin-bottom: 20px;">
+                    <h4 style="color: #fff; font-size: 18px; margin-bottom: 5px;">🚀 Long-term Prediction</h4>
+                    <div style="color: ${longTermConfidenceColor}; font-weight: bold; font-size: 16px;">
+                        Confidence: ${longTermPrediction.confidence}
+                    </div>
+                    <div style="margin-top: 5px; font-size: 14px; color: #ccc;">
+                        ${longTermIcon} ${longTermText}
+                    </div>
+                </div>
+                
+                <div class="prediction-details" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px;">
+                    <div class="prediction-item" style="background: rgba(255,255,255,0.1); padding: 15px; border-radius: 8px; text-align: center;">
+                        <div style="font-size: 12px; color: #ccc; margin-bottom: 5px;">Current Price</div>
+                        <div style="font-size: 18px; font-weight: bold; color: #fff;">${window.formatPrice ? window.formatPrice(longTermPrediction.currentPrice) : `$${longTermPrediction.currentPrice.toLocaleString()}`}</div>
+                    </div>
+                    
+                    <div class="prediction-item" style="${longTermHighStyle} padding: 15px; border-radius: 8px; text-align: center;">
+                        <div style="font-size: 12px; color: #ccc; margin-bottom: 5px;">
+                            ${longTermPrediction.highlightedTarget === 'HIGH' ? '🎯 LONG-TERM TARGET' : 'Predicted High (4Y)'}
+                        </div>
+                        <div style="font-size: 18px; font-weight: bold; color: #16c784">${window.formatPrice ? window.formatPrice(longTermPrediction.predictedHigh) : `$${longTermPrediction.predictedHigh.toLocaleString()}`}</div>
+                    </div>
+                    
+                    <div class="prediction-item" style="${longTermLowStyle} padding: 15px; border-radius: 8px; text-align: center;">
+                        <div style="font-size: 12px; color: #ccc; margin-bottom: 5px;">
+                            ${longTermPrediction.highlightedTarget === 'LOW' ? '🎯 LONG-TERM TARGET' : 'Predicted Low (4Y)'}
+                        </div>
+                        <div style="font-size: 18px; font-weight: bold; color: #ff4b4b">${window.formatPrice ? window.formatPrice(longTermPrediction.predictedLow) : `$${longTermPrediction.predictedLow.toLocaleString()}`}</div>
+                    </div>
+                    
+                    <div class="prediction-item" style="background: rgba(255,255,255,0.1); padding: 15px; border-radius: 8px; text-align: center;">
+                        <div style="font-size: 12px; color: #ccc; margin-bottom: 5px;">Long-term Trend</div>
+                        <div style="font-size: 18px; font-weight: bold; color: ${longTermTrendColor}">${(longTermPrediction.trendStrength * 100).toFixed(1)}%</div>
+                    </div>
+                </div>
+                
+                <div class="prediction-analysis" style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                    <h5 style="color: #fff; margin-bottom: 10px; font-size: 14px;"> Long-term Analysis</h5>
+                    <p style="color: #ccc; line-height: 1.4; font-size: 13px;">${longTermPrediction.analysis}</p>
+                </div>
+                
+                <div class="prediction-signals" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px;">
+                    <div class="signal-item" style="background: rgba(22, 199, 132, 0.1); padding: 15px; border-radius: 8px; text-align: center; border: 1px solid rgba(22, 199, 132, 0.3);">
+                        <div style="font-size: 11px; color: #ccc; margin-bottom: 5px;">Bullish Signals (Weighted)</div>
+                        <div style="font-size: 16px; font-weight: bold; color: #16c784">${longTermPrediction.bullishSignals.toFixed(2)}</div>
+                    </div>
+                    <div class="signal-item" style="background: rgba(255, 75, 75, 0.1); padding: 15px; border-radius: 8px; text-align: center; border: 1px solid rgba(255, 75, 75, 0.3);">
+                        <div style="font-size: 11px; color: #ccc; margin-bottom: 5px;">Bearish Signals (Weighted)</div>
+                        <div style="font-size: 16px; font-weight: bold; color: #ff4b4b">${longTermPrediction.bearishSignals.toFixed(2)}</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Comparison Summary -->
+            <div class="comparison-summary" style="background: rgba(255,255,255,0.05); padding: 20px; border-radius: 10px; text-align: center;">
+                <h5 style="color: #fff; margin-bottom: 15px; font-size: 16px;">📊 Prediction Comparison</h5>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px;">
+                    <div>
+                        <div style="font-size: 12px; color: #ccc; margin-bottom: 5px;">3-Month Range</div>
+                        <div style="font-size: 14px; color: #fff;">
+                            ${window.formatPrice ? window.formatPrice(shortTermPrediction.predictedLow) : `$${shortTermPrediction.predictedLow.toLocaleString()}`} - 
+                            ${window.formatPrice ? window.formatPrice(shortTermPrediction.predictedHigh) : `$${shortTermPrediction.predictedHigh.toLocaleString()}`}
+                        </div>
+                    </div>
+                    <div>
+                        <div style="font-size: 12px; color: #ccc; margin-bottom: 5px;">4-Year Range</div>
+                        <div style="font-size: 14px; color: #fff;">
+                            ${window.formatPrice ? window.formatPrice(longTermPrediction.predictedLow) : `$${longTermPrediction.predictedLow.toLocaleString()}`} - 
+                            ${window.formatPrice ? window.formatPrice(longTermPrediction.predictedHigh) : `$${longTermPrediction.predictedHigh.toLocaleString()}`}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    predictNext4Years() {
+        const timeframes = ['daily', 'weekly', 'monthly', 'yearly'];
+        const current = this.currentPrice;
+        
+        // 1. Long-term trend analysis (weighted differently)
+        let bullishSignals = 0;
+        let bearishSignals = 0;
+        let totalSignals = 0;
+        
+        // Different weights for long-term prediction
+        const weights = {
+            yearly: 0.50,    // 50% - most important for long-term
+            monthly: 0.30,   // 30% - medium importance
+            weekly: 0.15,    // 15% - less important
+            daily: 0.05      // 5% - least important
+        };
+        
+        timeframes.forEach(tf => {
+            const data = this.timeframes[tf];
+            if (!data || !data.levels) return;
+            
+            const levels = data.levels;
+            const weight = weights[tf];
+            
+            // Check position relative to pivot
+            if (current > levels.pivot) {
+                bullishSignals += weight;
+            } else if (current < levels.pivot) {
+                bearishSignals += weight;
+            }
+            totalSignals += weight;
+            
+            // Check momentum (distance from support/resistance)
+            const distanceToR1 = Math.abs(current - levels.r1);
+            const distanceToS1 = Math.abs(current - levels.s1);
+            
+            if (distanceToR1 < distanceToS1) {
+                bullishSignals += weight * 0.5; // Closer to resistance = potential breakout
+            } else {
+                bearishSignals += weight * 0.5; // Closer to support = potential breakdown
+            }
+        });
+        
+        // 2. Calculate long-term trend strength
+        const trendStrength = (bullishSignals - bearishSignals) / totalSignals;
+        
+        // 3. Predict price ranges for next 4 years using YEARLY levels
+        const yearlyData = this.timeframes.yearly;
+        let predictedHigh = current;
+        let predictedLow = current;
+        let confidence = 'MEDIUM';
+        let highlightedTarget = 'NONE';
+        
+        if (yearlyData && yearlyData.levels) {
+            const yearlyLevels = yearlyData.levels;
+            
+            // Calculate current position relative to yearly levels
+            const currentToR1 = ((current - yearlyLevels.r1) / yearlyLevels.r1) * 100;
+            const currentToS1 = ((current - yearlyLevels.s1) / yearlyLevels.s1) * 100;
+            const currentToPivot = ((current - yearlyLevels.pivot) / yearlyLevels.pivot) * 100;
+            
+            if (trendStrength > 0.3) {
+                // Bullish long-term prediction
+                predictedHigh = yearlyLevels.r4 || current * 1.80;  // R4 for 4 years
+                predictedLow = yearlyLevels.s1 || current * 0.50;   // ← UBAH: Guna S1 yearly sahaja
+                confidence = 'HIGH';
+                highlightedTarget = 'HIGH';
+            } else if (trendStrength < -0.3) {
+                // Bearish long-term prediction
+                predictedHigh = yearlyLevels.r2 || current * 1.20;  // R2 as resistance
+                predictedLow = yearlyLevels.s1 || current * 0.50;   // ← UBAH: Guna S1 yearly sahaja
+                confidence = 'HIGH';
+                highlightedTarget = 'LOW';
+            } else {
+                // Neutral long-term prediction
+                predictedHigh = yearlyLevels.r3 || current * 1.50;  // R3 for neutral
+                predictedLow = yearlyLevels.s1 || current * 0.60;   // ← UBAH: Guna S1 yearly sahaja
+                confidence = 'MEDIUM';
+                
+                // For neutral, determine highlight based on position
+                if (Math.abs(currentToPivot) < 5) {
+                    highlightedTarget = 'NONE';
+                } else if (currentToR1 > -10 && currentToR1 < 10) {
+                    highlightedTarget = 'LOW';
+                } else if (currentToS1 > -10 && currentToS1 < 10) {
+                    highlightedTarget = 'HIGH';
+                } else {
+                    highlightedTarget = 'NONE';
+                }
+            }
+        }
+        
+        // 4. Calculate long-term probability ranges
+        const prediction = {
+            currentPrice: current,
+            predictedHigh: predictedHigh,
+            predictedLow: predictedLow,
+            trendStrength: trendStrength,
+            confidence: confidence,
+            highlightedTarget: highlightedTarget,
+            timeframe: '4 Years',
+            bullishSignals: bullishSignals,
+            bearishSignals: bearishSignals,
+            totalSignals: totalSignals,
+            analysis: this.generateLongTermAnalysis(trendStrength, predictedHigh, predictedLow)
+        };
+        
+        return prediction;
+    }
+
+    generateLongTermAnalysis(trendStrength, predictedHigh, predictedLow) {
+        let analysis = '';
+        
+        if (trendStrength > 0.5) {
+            analysis = `Strong long-term bullish momentum detected. Price likely to experience significant growth over 4 years with potential targets above ${window.formatPrice ? window.formatPrice(predictedHigh) : `$${predictedHigh.toLocaleString()}`}. This suggests a major bull market cycle.`;
+        } else if (trendStrength > 0.2) {
+            analysis = `Moderate long-term bullish bias. Expect gradual but sustained upward movement over 4 years with resistance at ${window.formatPrice ? window.formatPrice(predictedHigh) : `$${predictedHigh.toLocaleString()}`}. This indicates a positive long-term outlook.`;
+        } else if (trendStrength < -0.5) {
+            analysis = `Strong long-term bearish pressure. Price may experience significant decline over 4 years with potential support at ${window.formatPrice ? window.formatPrice(predictedLow) : `$${predictedLow.toLocaleString()}`}. This suggests a major bear market cycle.`;
+        } else if (trendStrength < -0.2) {
+            analysis = `Moderate long-term bearish bias. Expect downward movement over 4 years with support at ${window.formatPrice ? window.formatPrice(predictedLow) : `$${predictedLow.toLocaleString()}`}. This indicates a challenging long-term outlook.`;
+        } else {
+            analysis = `Neutral long-term market conditions. Price likely to consolidate between ${window.formatPrice ? window.formatPrice(predictedLow) : `$${predictedLow.toLocaleString()}`} and ${window.formatPrice ? window.formatPrice(predictedHigh) : `$${predictedHigh.toLocaleString()}`} over 4 years. This suggests a sideways market with moderate volatility.`;
+        }
+        
+        return analysis;
+    }
+
+    updateLongTermPredictionDisplay() {
+        const prediction = this.predictNext4Years();
+        
+        const predictionContent = document.getElementById('longterm-prediction-content');
+        if (!predictionContent || predictionContent.style.display === 'none') {
+            return;
+        }
+        
+        const predictionContainer = document.getElementById('longterm-prediction-container');
+        if (!predictionContainer) return;
+        
+        const confidenceColor = prediction.confidence === 'HIGH' ? '#16c784' : 
+                               prediction.confidence === 'MEDIUM' ? '#ffa500' : '#ff4b4b';
+        
+        const trendColor = prediction.trendStrength > 0.2 ? '#16c784' : 
+                          prediction.trendStrength < -0.2 ? '#ff4b4b' : '#ffffff';
+        
+        // Highlight styling for long-term
+        const highStyle = prediction.highlightedTarget === 'HIGH' ? 
+            'background: rgba(22, 199, 132, 0.3); border: 3px solid #16c784; box-shadow: 0 0 20px rgba(22, 199, 132, 0.4);' : 
+            'background: rgba(255,255,255,0.1);';
+        
+        const lowStyle = prediction.highlightedTarget === 'LOW' ? 
+            'background: rgba(255, 75, 75, 0.3); border: 3px solid #ff4b4b; box-shadow: 0 0 20px rgba(255, 75, 75, 0.4);' : 
+            'background: rgba(255,255,255,0.1);';
+        
+        // Long-term trajectory indicator
+        const trajectoryIcon = prediction.highlightedTarget === 'HIGH' ? '🚀' : 
+                              prediction.highlightedTarget === 'LOW' ? '📉' : '➡️';
+        
+        const trajectoryText = prediction.highlightedTarget === 'HIGH' ? 'LONG-TERM BULLISH' :
+                              prediction.highlightedTarget === 'LOW' ? 'LONG-TERM BEARISH' : 
+                              'LONG-TERM NEUTRAL';
+        
+        predictionContainer.innerHTML = `
+            <div class="prediction-header" style="text-align: center; margin-bottom: 30px;">
+                <h3 style="color: #fff; margin-bottom: 10px;">🎯 4-Year Long-Term Prediction</h3>
+                <div class="prediction-confidence" style="color: ${confidenceColor}; font-weight: bold; font-size: 18px;">
+                    Confidence: ${prediction.confidence}
+                </div>
+                <div style="margin-top: 10px; font-size: 16px; color: #ccc;">
+                    ${trajectoryIcon} ${trajectoryText}
+                </div>
+            </div>
+            
+            <div class="prediction-details" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-bottom: 30px;">
+                <div class="prediction-item" style="background: rgba(255,255,255,0.1); padding: 20px; border-radius: 10px; text-align: center;">
+                    <div style="font-size: 14px; color: #ccc; margin-bottom: 8px;">Current Price</div>
+                    <div style="font-size: 24px; font-weight: bold; color: #fff;">${window.formatPrice ? window.formatPrice(prediction.currentPrice) : `$${prediction.currentPrice.toLocaleString()}`}</div>
+                </div>
+                
+                <div class="prediction-item" style="${highStyle} padding: 20px; border-radius: 10px; text-align: center;">
+                    <div style="font-size: 14px; color: #ccc; margin-bottom: 8px;">
+                        ${prediction.highlightedTarget === 'HIGH' ? '🎯 LONG-TERM TARGET' : 'Predicted High (4Y)'}
+                    </div>
+                    <div style="font-size: 24px; font-weight: bold; color: #16c784">${window.formatPrice ? window.formatPrice(prediction.predictedHigh) : `$${prediction.predictedHigh.toLocaleString()}`}</div>
+                </div>
+                
+                <div class="prediction-item" style="${lowStyle} padding: 20px; border-radius: 10px; text-align: center;">
+                    <div style="font-size: 14px; color: #ccc; margin-bottom: 8px;">
+                        ${prediction.highlightedTarget === 'LOW' ? '🎯 LONG-TERM TARGET' : 'Predicted Low (4Y)'}
+                    </div>
+                    <div style="font-size: 24px; font-weight: bold; color: #ff4b4b">${window.formatPrice ? window.formatPrice(prediction.predictedLow) : `$${prediction.predictedLow.toLocaleString()}`}</div>
+                </div>
+                
+                <div class="prediction-item" style="background: rgba(255,255,255,0.1); padding: 20px; border-radius: 10px; text-align: center;">
+                    <div style="font-size: 14px; color: #ccc; margin-bottom: 8px;">Long-Term Trend</div>
+                    <div style="font-size: 24px; font-weight: bold; color: ${trendColor}">${(prediction.trendStrength * 100).toFixed(1)}%</div>
+                </div>
+            </div>
+            
+            <div class="prediction-analysis" style="background: rgba(255,255,255,0.05); padding: 25px; border-radius: 10px; margin-bottom: 30px;">
+                <h4 style="color: #fff; margin-bottom: 15px; font-size: 18px;"> Long-Term Analysis</h4>
+                <p style="color: #ccc; line-height: 1.6; font-size: 16px;">${prediction.analysis}</p>
+            </div>
+            
+            <div class="prediction-signals" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px;">
+                <div class="signal-item" style="background: rgba(22, 199, 132, 0.1); padding: 20px; border-radius: 10px; text-align: center; border: 1px solid rgba(22, 199, 132, 0.3);">
+                    <div style="font-size: 14px; color: #ccc; margin-bottom: 8px;">Bullish Signals (Weighted)</div>
+                    <div style="font-size: 24px; font-weight: bold; color: #16c784">${prediction.bullishSignals.toFixed(2)}</div>
+                </div>
+                <div class="signal-item" style="background: rgba(255, 75, 75, 0.1); padding: 20px; border-radius: 10px; text-align: center; border: 1px solid rgba(255, 75, 75, 0.3);">
+                    <div style="font-size: 14px; color: #ccc; margin-bottom: 8px;">Bearish Signals (Weighted)</div>
+                    <div style="font-size: 24px; font-weight: bold; color: #ff4b4b">${prediction.bearishSignals.toFixed(2)}</div>
+                </div>
+            </div>
+        `;
+    }
 }
 
 // Add formatSRLevel helper at top-level
@@ -1017,7 +1555,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (chartCanvas) chartCanvas.style.display = 'none';
                 if (summaryCards) summaryCards.style.display = 'none';
                 if (converterWrapper) converterWrapper.style.display = 'none';
-            } else { // Default to chart if not summary, converter, calculator, or reference
+            } else if (timeframe === 'prediction') {
+                if (chartCanvas) chartCanvas.style.display = 'none';
+                if (summaryCards) summaryCards.style.display = 'none';
+                if (converterWrapper) converterWrapper.style.display = 'none';
+                // Update prediction display when prediction tab is active
+                if (window.calculator) {
+                    window.calculator.updatePredictionDisplay();
+                }
+            } else { // Default to chart if not summary, converter, calculator, reference, or prediction
                 if (chartCanvas) chartCanvas.style.display = 'block';
                 if (summaryCards) summaryCards.style.display = 'none';
                 if (converterWrapper) converterWrapper.style.display = 'none';
@@ -1035,8 +1581,8 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function updateChartWithTimeframe(timeframe) {
-    // Prevent chart update if calculator or reference tab is active
-    if (timeframe === 'calculator' || timeframe === 'reference') return;
+    // Prevent chart update if calculator, reference, or prediction tab is active
+    if (timeframe === 'calculator' || timeframe === 'reference' || timeframe === 'prediction') return;
     // Update chart S/R lines based on selected timeframe
     if (window.btcChart && window.calculator) {
         // Update current timeframe
