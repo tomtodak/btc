@@ -1815,6 +1815,11 @@ function updateAllCurrencyDisplays() {
     // Update summary tab
     updateSummaryTabCurrency();
     
+    // Update prediction display - TAMBAH INI
+    if (window.calculator) {
+        window.calculator.updatePredictionDisplay();
+    }
+    
     // Update chart if it exists and is visible
     if (window.btcChart && window.calculator) {
         const currentTimeframe = window.calculator.currentTimeframe;
